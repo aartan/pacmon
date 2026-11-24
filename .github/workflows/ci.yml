@@ -49,6 +49,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y xvfb
           cp -r tests/fixtures/npm-v2 /tmp/smoke-proj
           GUARDRAIL_SMOKE_PROJECT=/tmp/smoke-proj xvfb-run -a timeout 180 release/linux-unpacked/guardrail --no-sandbox | grep SMOKE_OK
+          GUARDRAIL_SMOKE_UI=1 xvfb-run -a timeout 60 release/linux-unpacked/guardrail --no-sandbox | grep UI_SMOKE
       - uses: actions/upload-artifact@v4
         with:
           name: guardrail-${{ matrix.os }}

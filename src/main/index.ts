@@ -107,6 +107,25 @@ app.whenReady().then(() => {
     return
   }
 
+  // UI smoke hook (GUARDRAIL_SMOKE_UI): render the app and dump the visible
+  // text after a short delay, to catch blank screens in CI.
+  if (process.env.GUARDRAIL_SMOKE_UI) {
+    createWindow()
+    mainWindow?.webContents.once('did-finish-load', () => {
+      setTimeout(async () => {
+        try {
+          const text = await mainWindow?.webContents.executeJavaScript('document.body.innerText')
+          console.log(`UI_SMOKE ${String(text).slice(0, 400).replace(/\n/g, ' | ')}`)
+          app.exit(0)
+        } catch (e) {
+          console.error('UI_SMOKE_FAIL', e instanceof Error ? e.message : String(e))
+          app.exit(1)
+        }
+      }, 4000)
+    })
+    return
+  }
+
   createWindow()
 
   app.on('activate', () => {
