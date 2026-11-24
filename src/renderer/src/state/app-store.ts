@@ -35,6 +35,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   scansInFlight: {},
 
   async init() {
+    if (get().ready) return
     const [appInfo, settings, projects, history] = await Promise.all([
       api.getAppInfo(),
       api.getSettings(),

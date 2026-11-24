@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Typecheck and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            script: build:linux
+          - os: macos-latest
+            script: build:mac
+          - os: windows-latest
+            script: build:win
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run ${{ matrix.script }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Smoke test (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb
+          cp -r tests/fixtures/npm-v2 /tmp/smoke-proj
+          GUARDRAIL_SMOKE_PROJECT=/tmp/smoke-proj xvfb-run -a timeout 180 release/linux-unpacked/guardrail --no-sandbox | grep SMOKE_OK
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guardrail-${{ matrix.os }}
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+          if-no-files-found: ignore
