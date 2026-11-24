@@ -337,9 +337,13 @@ export function RemediationPanel({
                       : ' Lifecycle scripts WILL run — only proceed if you trust these packages.'}
                   </p>
                   {!preview.packageManagerAvailable && (
-                    <p className="mt-2 flex items-center gap-1.5 text-xs text-critical">
-                      <TriangleAlert className="h-3.5 w-3.5" />
-                      Package manager “{plan.packageManager}” was not found on this machine.
+                    <p className="mt-2 flex items-start gap-1.5 text-xs text-critical">
+                      <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        Package manager “{plan.packageManager}” was not found. Guardrail searches your PATH
+                        plus common Node version-manager locations (nvm, fnm, volta, mise, asdf). Install{' '}
+                        {plan.packageManager} or make sure it is on your shell PATH, then try again.
+                      </span>
                     </p>
                   )}
                 </div>
