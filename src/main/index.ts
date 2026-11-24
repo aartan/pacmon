@@ -1,4 +1,5 @@
 import { app, BrowserWindow, shell } from 'electron'
+import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { registerIpc } from './ipc/register'
 import { bootstrapProviders } from './services/provider-bootstrap'
@@ -6,6 +7,7 @@ import { HistoryStore } from './services/history-store'
 import { ProjectRegistry } from './services/project-registry'
 import { SettingsStore } from './services/settings-store'
 import { AdvisoryService } from './services/advisory-service'
+import { getJavaScriptProvider } from '../core/ecosystems/registry'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -19,7 +21,9 @@ function createWindow(): void {
     title: 'Guardrail',
     autoHideMenuBar: true,
     backgroundColor: '#fafafa',
-    icon: join(__dirname, '../../build/icon.png'),
+    ...(existsSync(join(__dirname, '../../build/icon.png'))
+      ? { icon: join(__dirname, '../../build/icon.png') }
+      : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -72,6 +76,36 @@ app.whenReady().then(() => {
     advisories,
     backupRootDir: join(userData, 'backups')
   })
+
+  // Smoke-test hook (GUARDRAIL_SMOKE_PROJECT): scan a project headlessly,
+  // write the report, and exit. Used by CI to verify the packaged binary
+  // end-to-end, including spawning the engine from the unpacked asar.
+  const smokeProject = process.env.GUARDRAIL_SMOKE_PROJECT
+  if (smokeProject) {
+    const smoke = async (): Promise<void> => {
+      const provider = getJavaScriptProvider()
+      if (!provider) throw new Error('provider unavailable')
+      const { detectProject, resolveProjectName } = await import('../core/detection/detect')
+      const detection = await detectProject(smokeProject)
+      const name = await resolveProjectName(smokeProject)
+      const project = registry.register(smokeProject, name, detection)
+      const report = await provider.scan({
+        projectId: project.id,
+        projectPath: smokeProject,
+        projectName: name,
+        options: { includeDev: true, timeoutSeconds: 300, minSeverity: null }
+      })
+      const outPath = join(app.getPath('temp'), 'guardrail-smoke-report.json')
+      writeFileSync(outPath, JSON.stringify(report, null, 2), 'utf8')
+      console.log(`SMOKE_OK findings=${report.summary.total} path=${outPath}`)
+      app.exit(0)
+    }
+    smoke().catch((e) => {
+      console.error('SMOKE_FAIL', e instanceof Error ? e.message : String(e))
+      app.exit(1)
+    })
+    return
+  }
 
   createWindow()
 

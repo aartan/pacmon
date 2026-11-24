@@ -47,7 +47,7 @@ export async function createBackup(
   backupRootDir: string,
   projectRoot: string,
   files: string[],
-  id = randomUUID()
+  id: string = randomUUID()
 ): Promise<Backup> {
   const backupDir = join(backupRootDir, id)
   await mkdir(backupDir, { recursive: true })

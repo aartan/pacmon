@@ -61,7 +61,14 @@ const LOCKFILE_NAMES = [
 export function remediationFileCandidates(projectPath: string): string[] {
   // Only names that package managers actually rewrite. Deliberately NOT
   // node_modules or anything else outside this allowlist.
-  return LOCKFILE_NAMES.map((n) => `${projectPath}/${n}`)
+  return ['package.json', ...LOCKFILE_NAMES].map((n) => `${projectPath}/${n}`)
+}
+
+/** Additional workspace manifests a target's install may rewrite. */
+export function workspaceManifestCandidates(projectPath: string, workspaces: string[]): string[] {
+  return workspaces
+    .filter((w) => w !== '.' && !w.includes('..'))
+    .map((w) => `${projectPath}/${w}/package.json`)
 }
 
 /**
@@ -124,7 +131,10 @@ export function planRemediation(
     })
     .map((v) => v.id)
 
-  const filesToBackup = remediationFileCandidates(scan.projectPath)
+  const filesToBackup = [
+    ...remediationFileCandidates(scan.projectPath),
+    ...targets.flatMap((t) => workspaceManifestCandidates(scan.projectPath, t.workspaces))
+  ]
 
   return {
     actions,

@@ -1,0 +1,8 @@
+{
+  "name": "fixture-pj",
+  "version": "1.0.0",
+  "dependencies": {
+    "minimist": "1.2.5",
+    "express": "^4.17.0"
+  }
+}
