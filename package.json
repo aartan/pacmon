@@ -4,6 +4,8 @@
   "description": "Extensible local-first security vulnerability scanning and remediation for developers",
   "main": "./out/main/index.js",
   "author": "Abdifatah Artan",
+  "homepage": "https://github.com/aartan/guardrail",
+  "desktopName": "guardrail.desktop",
   "license": "MIT",
   "private": true,
   "scripts": {

@@ -56,6 +56,7 @@ linux:
       arch: [x64]
   icon: build/icon.png
   category: Development
+  syncDesktopName: true
   maintainer: Abdifatah Artan <abdifatah.artan@outlook.com>
   synopsis: Local-first vulnerability scanning and remediation
 
