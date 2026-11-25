@@ -20,7 +20,7 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    title: 'Guardrail',
+    title: 'Pacmon',
     autoHideMenuBar: true,
     backgroundColor: '#f6f7f9',
     ...(existsSync(join(__dirname, '../../build/icon.png'))
@@ -83,10 +83,10 @@ app.whenReady().then(() => {
     backupRootDir: join(userData, 'backups')
   })
 
-  // Smoke-test hook (GUARDRAIL_SMOKE_PROJECT): scan a project headlessly,
+  // Smoke-test hook (PACMON_SMOKE_PROJECT): scan a project headlessly,
   // write the report, and exit. Used by CI to verify the packaged binary
   // end-to-end, including spawning the engine from the unpacked asar.
-  const smokeProject = process.env.GUARDRAIL_SMOKE_PROJECT
+  const smokeProject = process.env.PACMON_SMOKE_PROJECT
   if (smokeProject) {
     const smoke = async (): Promise<void> => {
       const provider = getJavaScriptProvider()
@@ -101,7 +101,7 @@ app.whenReady().then(() => {
         projectName: name,
         options: { includeDev: true, timeoutSeconds: 300, minSeverity: null }
       })
-      const outPath = join(app.getPath('temp'), 'guardrail-smoke-report.json')
+      const outPath = join(app.getPath('temp'), 'pacmon-smoke-report.json')
       writeFileSync(outPath, JSON.stringify(report, null, 2), 'utf8')
       console.log(`SMOKE_OK findings=${report.summary.total} path=${outPath}`)
       app.exit(0)
@@ -113,9 +113,9 @@ app.whenReady().then(() => {
     return
   }
 
-  // UI smoke hook (GUARDRAIL_SMOKE_UI): render the app and dump the visible
+  // UI smoke hook (PACMON_SMOKE_UI): render the app and dump the visible
   // text after a short delay, to catch blank screens in CI.
-  if (process.env.GUARDRAIL_SMOKE_UI) {
+  if (process.env.PACMON_SMOKE_UI) {
     createWindow()
     mainWindow?.webContents.once('did-finish-load', () => {
       setTimeout(async () => {

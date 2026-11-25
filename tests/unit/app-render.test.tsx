@@ -17,7 +17,7 @@ const settings: AppSettings = {
   minSeverity: null,
   testCommand: 'npm test',
   branchNamePattern: 'fix/{project}-deps-{date}',
-  commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [guardrail]'
+  commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [pacmon]'
 }
 
 const noop = () => () => {}
@@ -27,7 +27,7 @@ function mockBridge() {
     getAppInfo: () =>
       Promise.resolve({
         ok: true as const,
-        data: { name: 'Guardrail', version: '0.1.0', engine: { name: 'cve-lite', version: '1.42.0' }, node: '24', electron: '45', platform: 'linux' }
+        data: { name: 'Pacmon', version: '0.1.0', engine: { name: 'cve-lite', version: '1.42.0' }, node: '24', electron: '45', platform: 'linux' }
       }),
     pickProject: () => Promise.resolve({ ok: true as const, data: { cancelled: true, path: null } }),
     detectProject: () => Promise.resolve({ ok: true as const, data: null }),

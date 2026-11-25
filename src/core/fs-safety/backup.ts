@@ -136,7 +136,7 @@ export async function restoreBackup(backupDir: string, projectRoot: string): Pro
     const source = join(backupDir, 'files', ...relSegments)
     await mkdir(dirname(abs), { recursive: true })
     // Atomic-ish: write to temp then rename.
-    const tmp = `${abs}.guardrail-restore-${randomUUID().slice(0, 8)}`
+    const tmp = `${abs}.pacmon-restore-${randomUUID().slice(0, 8)}`
     await copyFile(source, tmp)
     await rename(tmp, abs)
     restored.push(entry.relPath)

@@ -203,7 +203,7 @@ export function DashboardView() {
       <PageHeader
         label="Overview"
         title="Security posture"
-        description="A local-first look at the projects you scan with Guardrail. Nothing leaves this machine except dependency names and versions, queried against public advisory databases."
+        description="A local-first look at the projects you scan with Pacmon. Nothing leaves this machine except dependency names and versions, queried against public advisory databases."
         actions={
           <Button variant="primary" loading={picking} onClick={pickAndRegister}>
             <FolderSearch className="h-4 w-4" />

@@ -13,7 +13,7 @@ import {
 } from '@core/fs-safety/backup'
 
 function tempDir(): string {
-  return mkdtempSync(join(tmpdir(), 'guardrail-test-'))
+  return mkdtempSync(join(tmpdir(), 'pacmon-test-'))
 }
 
 describe('containment', () => {

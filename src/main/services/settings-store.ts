@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   minSeverity: null,
   testCommand: 'npm test',
   branchNamePattern: 'fix/{project}-deps-{date}',
-  commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [guardrail]'
+  commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [pacmon]'
 }
 
 export class SettingsStore {

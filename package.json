@@ -1,11 +1,11 @@
 {
-  "name": "guardrail",
+  "name": "pacmon",
   "version": "0.1.0",
-  "description": "Extensible local-first security vulnerability scanning and remediation for developers",
+  "description": "Local-first package vulnerability monitoring and remediation for developers",
   "main": "./out/main/index.js",
   "author": "Abdifatah Artan",
   "homepage": "https://github.com/aartan/guardrail",
-  "desktopName": "guardrail.desktop",
+  "desktopName": "pacmon.desktop",
   "license": "MIT",
   "private": true,
   "scripts": {

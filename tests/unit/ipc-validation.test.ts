@@ -57,7 +57,7 @@ describe('IPC payload validation', () => {
       minSeverity: null,
       testCommand: 'npm test',
       branchNamePattern: 'fix/{project}-deps-{date}',
-      commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [guardrail]'
+      commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [pacmon]'
     })
     expect(parsed.theme).toBe('dark')
   })

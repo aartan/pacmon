@@ -898,7 +898,7 @@ export function RemediationPanel({
                   <p className="mt-3 text-[11px] leading-relaxed text-faint">
                     Expected to resolve {preview.resolvesFindings} finding{preview.resolvesFindings === 1 ? '' : 's'}.
                     {preview.breakingCount > 0 && ` Includes ${preview.breakingCount} breaking upgrade${preview.breakingCount === 1 ? '' : 's'}.`}
-                    {' '}Before applying, Guardrail will back up {preview.filesToBackup.length} file
+                    {' '}Before applying, Pacmon will back up {preview.filesToBackup.length} file
                     {preview.filesToBackup.length === 1 ? '' : 's'} for rollback.
                     {preview.lifecycleScriptsIgnored
                       ? ' Lifecycle scripts will not run.'
@@ -908,7 +908,7 @@ export function RemediationPanel({
                     <p className="mt-2 flex items-start gap-1.5 text-xs text-critical">
                       <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
-                        Package manager “{plan.packageManager}” was not found. Guardrail searches your PATH
+                        Package manager “{plan.packageManager}” was not found. Pacmon searches your PATH
                         plus common Node version-manager locations (nvm, fnm, volta, mise, asdf). Install{' '}
                         {plan.packageManager} or make sure it is on your shell PATH, then try again.
                       </span>

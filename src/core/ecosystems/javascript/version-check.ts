@@ -1,7 +1,7 @@
 /**
  * Installed-version verification after overrides ("npm ls" equivalents).
  *
- * After an override is applied and installed, Guardrail runs the package
+ * After an override is applied and installed, Pacmon runs the package
  * manager's tree-listing command per overridden package and checks that the
  * vulnerable version is no longer present and the target version is. Pure
  * command construction + output analysis — no process spawning here.

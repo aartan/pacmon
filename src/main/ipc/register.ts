@@ -129,7 +129,7 @@ export function registerIpc(deps: IpcDeps): void {
   handle(CHANNELS.appInfo, () => {
     const provider = getJavaScriptProvider()
     return ok({
-      name: 'Guardrail',
+      name: 'Pacmon',
       version: '0.1.0',
       engine: { name: 'cve-lite-cli', version: provider?.metadata().engine ?? 'unavailable' },
       node: process.versions.node,
@@ -752,7 +752,7 @@ export function registerIpc(deps: IpcDeps): void {
     const win = getWindow()
     if (!win) return err('No application window')
     const stamp = new Date(report.scannedAt).toISOString().replace(/[:.]/g, '-')
-    const defaultPath = join(documentsPath(), `guardrail-${report.projectName}-${stamp}.json`)
+    const defaultPath = join(documentsPath(), `pacmon-${report.projectName}-${stamp}.json`)
     const result = await dialog.showSaveDialog(win, {
       title: 'Export scan report',
       defaultPath,

@@ -21,14 +21,14 @@ function applyTheme(theme: Theme): void {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('guardrail-theme')
+    const stored = localStorage.getItem('pacmon-theme')
     if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
     return 'system'
   })
 
   useEffect(() => {
     applyTheme(theme)
-    localStorage.setItem('guardrail-theme', theme)
+    localStorage.setItem('pacmon-theme', theme)
   }, [theme])
 
   useEffect(() => {

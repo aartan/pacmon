@@ -278,7 +278,7 @@ export function SettingsView() {
             <MicroLabel>About</MicroLabel>
             <div className="mt-2 divide-y divide-hairline">
               <Row label="Application">
-                <span className="font-mono text-xs text-muted">Guardrail {appInfo?.version ?? '—'}</span>
+                <span className="font-mono text-xs text-muted">{appInfo?.name ?? 'Pacmon'} {appInfo?.version ?? '—'}</span>
               </Row>
               <Row label="Scanning engine">
                 <span className="font-mono text-xs text-muted">{appInfo?.engine.version ?? '—'}</span>

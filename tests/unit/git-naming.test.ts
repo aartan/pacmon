@@ -61,7 +61,7 @@ describe('expandPattern', () => {
 describe('validateBranchName', () => {
   it('accepts safe names', () => {
     expect(validateBranchName('fix/my-app-deps-2026-11-24')).toBeNull()
-    expect(validateBranchName('guardrail/lodash-4.17.21')).toBeNull()
+    expect(validateBranchName('pacmon/lodash-4.17.21')).toBeNull()
   })
 
   it('rejects spaces, dots, traversal and bad edges', () => {
@@ -85,7 +85,7 @@ describe('validateBranchName', () => {
 
 describe('validateCommitMessage', () => {
   it('accepts single-line messages', () => {
-    expect(validateCommitMessage('fix(deps): update lodash [guardrail]')).toBeNull()
+    expect(validateCommitMessage('fix(deps): update lodash [pacmon]')).toBeNull()
   })
 
   it('rejects empty, multiline and control-character messages', () => {

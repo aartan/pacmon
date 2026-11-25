@@ -395,7 +395,7 @@ export interface GitPreview {
   dirtyPaths: string[]
   branch: string
   message: string
-  /** Files Guardrail will stage, relative to the repo root. */
+  /** Files Pacmon will stage, relative to the repo root. */
   filesToCommit: string[]
   error: string | null
 }

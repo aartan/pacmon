@@ -126,7 +126,7 @@ export function ProjectDetailView() {
       <PageBody>
         <EmptyState
           title="Project not found"
-          description="This project is not registered in Guardrail."
+          description="This project is not registered in Pacmon."
           action={<Button onClick={() => navigate('/projects')}>Back to projects</Button>}
         />
       </PageBody>

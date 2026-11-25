@@ -55,7 +55,7 @@ beforeAll(async () => {
   // NPM_CONFIG_REGISTRY is the supported way to point it at a local registry.
   process.env.NODE_EXTRA_CA_CERTS = resolve(__dirname, '../helpers/certs/test-cert.pem')
   process.env.NPM_CONFIG_REGISTRY = `${server.url}/`
-  backupRoot = mkdtempSync(join(tmpdir(), 'guardrail-backups-'))
+  backupRoot = mkdtempSync(join(tmpdir(), 'pacmon-backups-'))
   provider = new CveLiteProvider({
     runner: new NodeEngineRunner(),
     executor: mockExecutor,
@@ -72,7 +72,7 @@ afterAll(async () => {
 
 function copyFixture(name: string): string {
   const src = resolve(__dirname, '../fixtures', name)
-  const dest = mkdtempSync(join(tmpdir(), `guardrail-${name}-`))
+  const dest = mkdtempSync(join(tmpdir(), `pacmon-${name}-`))
   cpSync(src, dest, { recursive: true })
   return dest
 }

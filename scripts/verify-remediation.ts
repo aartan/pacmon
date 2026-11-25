@@ -43,9 +43,9 @@ function realExecutor() {
 }
 
 async function main(): Promise<void> {
-  const dest = mkdtempSync(join(tmpdir(), 'guardrail-real-'))
+  const dest = mkdtempSync(join(tmpdir(), 'pacmon-real-'))
   cpSync('tests/fixtures/npm-v2', dest, { recursive: true })
-  const backups = mkdtempSync(join(tmpdir(), 'guardrail-real-backups-'))
+  const backups = mkdtempSync(join(tmpdir(), 'pacmon-real-backups-'))
 
   const provider = new CveLiteProvider({
     runner: new NodeEngineRunner(),

@@ -1,8 +1,23 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="32" y="32" width="960" height="960" rx="224" fill="#09090B"/>
-  <rect x="33" y="33" width="958" height="958" rx="223" stroke="#FAFAFA" stroke-opacity="0.08" stroke-width="2"/>
-  <!-- minimal shield -->
-  <path d="M512 236 L700 316 V496 C700 626 622 726 512 788 C402 726 324 626 324 496 V316 L512 236 Z" fill="none" stroke="#FAFAFA" stroke-opacity="0.35" stroke-width="28" stroke-linejoin="round"/>
-  <!-- check -->
-  <path d="M432 512 L488 568 L600 424" stroke="#60A5FA" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Pacmon: package monitoring. Monochrome print: paper, ink cube, signal pulse. -->
+  <rect width="1024" height="1024" fill="#f6f7f9"/>
+
+  <!-- package cube (ink) -->
+  <g fill="none" stroke="#161a20" stroke-width="44" stroke-linejoin="round">
+    <path d="M512 200 L784 348 L512 496 L240 348 Z"/>
+    <path d="M240 348 V640"/>
+    <path d="M512 496 V788"/>
+    <path d="M784 348 V640"/>
+    <path d="M240 640 L512 788 L784 640"/>
+  </g>
+
+  <!-- monitor pulse (signal green) -->
+  <path
+    d="M188 596 H424 L472 524 L528 668 L584 524 L632 596 H836"
+    fill="none"
+    stroke="#059669"
+    stroke-width="42"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>

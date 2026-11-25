@@ -80,7 +80,7 @@ describe('RemediationPanel override pipeline', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'securityApp', {
       value: {
-        getAppInfo: () => Promise.resolve(ok({ name: 'Guardrail', version: '0.1.0', engine: { name: 'x', version: '1' }, node: '24', electron: '45', platform: 'linux' })),
+        getAppInfo: () => Promise.resolve(ok({ name: 'Pacmon', version: '0.1.0', engine: { name: 'x', version: '1' }, node: '24', electron: '45', platform: 'linux' })),
         pickProject: () => Promise.resolve(ok({ cancelled: true, path: null })),
         detectProject: () => Promise.resolve(ok(null)),
         registerProject: () => Promise.resolve(ok(null)),

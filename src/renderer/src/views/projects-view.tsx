@@ -35,7 +35,7 @@ export function ProjectsView() {
   }
 
   const removeProject = async (id: string, name: string) => {
-    if (!window.confirm(`Remove "${name}" from Guardrail? Scan history for this project will also be deleted.`)) return
+    if (!window.confirm(`Remove "${name}" from Pacmon? Scan history for this project will also be deleted.`)) return
     await api.removeProject(id)
     await refreshProjects()
   }
@@ -45,7 +45,7 @@ export function ProjectsView() {
       <PageHeader
         label="Projects"
         title="Projects"
-        description="Folders you scan with Guardrail. Detection runs locally against the project files."
+        description="Folders you scan with Pacmon. Detection runs locally against the project files."
         actions={
           <Button variant="primary" loading={picking} onClick={addProject}>
             <FolderPlus className="h-4 w-4" />

@@ -13,7 +13,7 @@ describe('nodeToolDirectories', () => {
   })
 
   it('includes nvm current-bin when present', async () => {
-    const home = mkdtempSync(join(tmpdir(), 'guardrail-home-'))
+    const home = mkdtempSync(join(tmpdir(), 'pacmon-home-'))
     mkdirSync(join(home, '.nvm', 'current', 'bin'), { recursive: true })
     process.env.HOME = home
     const { nodeToolDirectories } = await import('../../src/main/services/exec-service')
@@ -23,7 +23,7 @@ describe('nodeToolDirectories', () => {
   })
 
   it('includes newest nvm version dirs when present', async () => {
-    const home = mkdtempSync(join(tmpdir(), 'guardrail-home-'))
+    const home = mkdtempSync(join(tmpdir(), 'pacmon-home-'))
     mkdirSync(join(home, '.nvm', 'versions', 'node', 'v18.0.0', 'bin'), { recursive: true })
     mkdirSync(join(home, '.nvm', 'versions', 'node', 'v22.0.0', 'bin'), { recursive: true })
     process.env.HOME = home
@@ -38,7 +38,7 @@ describe('nodeToolDirectories', () => {
   })
 
   it('includes volta and asdf shims', async () => {
-    const home = mkdtempSync(join(tmpdir(), 'guardrail-home-'))
+    const home = mkdtempSync(join(tmpdir(), 'pacmon-home-'))
     mkdirSync(join(home, '.volta', 'bin'), { recursive: true })
     mkdirSync(join(home, '.asdf', 'shims'), { recursive: true })
     process.env.HOME = home
@@ -50,7 +50,7 @@ describe('nodeToolDirectories', () => {
   })
 
   it('never includes directories that do not exist', async () => {
-    const home = mkdtempSync(join(tmpdir(), 'guardrail-home-'))
+    const home = mkdtempSync(join(tmpdir(), 'pacmon-home-'))
     process.env.HOME = home
     const { nodeToolDirectories } = await import('../../src/main/services/exec-service')
     for (const dir of nodeToolDirectories()) {

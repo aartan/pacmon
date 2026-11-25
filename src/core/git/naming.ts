@@ -1,5 +1,5 @@
 /**
- * Branch and commit-message naming for Guardrail commits. Patterns are
+ * Branch and commit-message naming for Pacmon commits. Patterns are
  * configurable and token-expanded; expansion output is validated so it can
  * only ever produce safe git refs and messages. Pure and unit-testable.
  */

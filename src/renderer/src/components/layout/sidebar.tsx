@@ -11,14 +11,23 @@ const NAV = [
   { to: '/settings', label: 'Settings', icon: Settings, end: false }
 ]
 
-/** Guardrail mark: angled rail bars, mono-console style. */
-function GuardrailMark({ className }: { className?: string }) {
+/** Pacmon mark: a package cube with a monitor pulse. */
+function PacmonMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M4 20 L9 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M11 20 L16 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M18 20 L23 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" opacity="0.45" />
-      <path d="M2.5 21.5 H21.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55" />
+      {/* package cube */}
+      <path d="M12 3 L20 7.5 L12 12 L4 7.5 Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M4 7.5 V16 L12 20.5 L20 16 V7.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M12 12 V20.5" stroke="currentColor" strokeWidth="1.6" />
+      {/* monitor pulse */}
+      <path
+        d="M3.5 16.5 H8.8 L10.2 14.5 L11.8 18.5 L13.2 14.5 L14.4 16.5 H20.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.85"
+      />
     </svg>
   )
 }
@@ -30,8 +39,8 @@ export function Sidebar() {
   return (
     <aside className="flex w-52 shrink-0 flex-col border-r border-hairline bg-surface-2/50">
       <div className="flex h-14 items-center gap-2.5 border-b border-hairline px-4">
-        <GuardrailMark className="h-5 w-5 text-foreground" />
-        <span className="font-display text-[17px] font-medium tracking-tight">Guardrail</span>
+        <PacmonMark className="h-5 w-5 text-foreground" />
+        <span className="font-display text-[17px] font-medium tracking-tight">Pacmon</span>
       </div>
 
       <nav className="flex-1 space-y-0.5 px-2 py-3" aria-label="Primary">
@@ -86,9 +95,6 @@ export function Sidebar() {
           </AnimatePresence>
           {isDark ? 'Light mode' : 'Dark mode'}
         </button>
-        <p className="mt-2 px-2.5 font-mono text-[9px] uppercase tracking-[0.18em] text-faint/70">
-          local-first · no cloud
-        </p>
       </div>
     </aside>
   )
