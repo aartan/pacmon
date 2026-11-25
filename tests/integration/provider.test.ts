@@ -15,6 +15,7 @@ import type {
 } from '@core/ecosystems/javascript/cve-lite-provider'
 import { CveLiteProvider } from '@core/ecosystems/javascript/cve-lite-provider'
 import { startMockServer, type MockServer } from '../helpers/mock-osv'
+import type { ScanReport } from '@shared/models'
 
 const cliEntry = resolve(__dirname, '../../node_modules/cve-lite-cli/dist/index.js')
 
@@ -242,6 +243,98 @@ describe('CveLiteProvider.remediate (mocked executor, real verification)', () =>
   })
 })
 
+describe('CveLiteProvider.applyOverrides (mocked executor, real verification)', () => {
+  it('writes version-scoped overrides, installs, verifies, and rolls back', async () => {
+    const project = copyFixture('npm-v2')
+    const real = await provider.scan({
+      projectId: 'p1',
+      projectPath: project,
+      projectName: 'fixture-npm',
+      options: scanOptions()
+    })
+
+    // Simulate a post-remediation scan where minimist remains as a transitive
+    // finding the normal flow could not move.
+    const scan: ScanReport = {
+      ...real,
+      vulnerabilities: real.vulnerabilities.map((v) =>
+        v.packageName === 'minimist'
+          ? {
+              ...v,
+              dependencyKind: 'transitive',
+              remediation: {
+                type: 'unavailable',
+                targetVersion: null,
+                breaking: false,
+                autoFixable: false,
+                reason: null
+              }
+            }
+          : v
+      ),
+      remediationPlan: real.remediationPlan
+        ? { ...real.remediationPlan, targets: [], unavailable: [] }
+        : null
+    }
+
+    const commandsRun: string[][] = []
+    provider = new CveLiteProvider({
+      runner: new NodeEngineRunner(),
+      executor: {
+        run: async (argv) => {
+          commandsRun.push(argv)
+          if (argv[0] === 'npm' && argv[1] === 'ls') {
+            // Simulate the installed tree after the override took effect.
+            return {
+              exitCode: 0,
+              stdout: 'fixture-npm@1.0.0 /fixture\n`-- minimist@1.2.6\n',
+              stderr: '',
+              error: null
+            }
+          }
+          simulateOverrideInstall(project)
+          return { exitCode: 0, stdout: '', stderr: '', error: null }
+        }
+      },
+      getBackupRootDir: () => backupRoot,
+      getPackageManagerInfo: async () => ({ available: true, version: '10.9.0' }),
+      extraScanArgs: ['--osv-url', server.url, '--allow-private-osv-url', '--no-cache']
+    })
+
+    const result = await provider.applyOverrides({ scan, ignoreLifecycleScripts: true })
+
+    expect(result.state).toBe('complete')
+    expect(result.error).toBeNull()
+    expect(result.entries).toEqual([
+      expect.objectContaining({ package: 'minimist', from: '1.2.5', to: '1.2.6' })
+    ])
+    expect(commandsRun).toEqual([['npm', 'install', '--ignore-scripts']])
+
+    // package.json got the flat version-scoped override for exactly that version.
+    const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8')) as Record<string, unknown>
+    expect(pkg.overrides).toEqual({ 'minimist@1.2.5': '1.2.6' })
+
+    // Verification ran a fresh scan that sees the overridden version.
+    expect(result.verification).not.toBeNull()
+    expect(result.verification!.resolvedIds.length).toBeGreaterThan(0)
+
+    // The npm-ls equivalent confirms the vulnerable version is gone.
+    const checks = await provider.verifyInstalledVersions(scan, [
+      { package: 'minimist', from: '1.2.5', to: '1.2.6' }
+    ])
+    expect(checks).toHaveLength(1)
+    expect(checks[0]).toMatchObject({ ok: true, stillInstalled: false, targetInstalled: true })
+    expect(commandsRun).toContainEqual(['npm', 'ls', 'minimist'])
+
+    // Rollback restores the pre-override files.
+    const restored = await restoreFromBackup(result.backupDir, project)
+    expect(restored).toContain('package.json')
+    const rolledBack = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8')) as Record<string, unknown>
+    expect(rolledBack.overrides).toBeUndefined()
+    rmSync(project, { recursive: true, force: true })
+  })
+})
+
 /* ------------------------------ helpers ---------------------------------- */
 
 const mockExecutor: CommandExecutor = {
@@ -263,6 +356,21 @@ function simulateNpmInstall(project: string, name: string, version: string): voi
   }
   lock.packages['node_modules/minimist'] = { version }
   lock.dependencies['minimist'] = { version }
+  writeFileSync(lockPath, JSON.stringify(lock, null, 2))
+}
+
+/**
+ * Simulate what `npm install` does after `overrides` were written to
+ * package.json: the lockfile now records the overridden (fixed) version.
+ */
+function simulateOverrideInstall(project: string): void {
+  const lockPath = join(project, 'package-lock.json')
+  const lock = JSON.parse(readFileSync(lockPath, 'utf8')) as {
+    packages: Record<string, { version?: string }>
+    dependencies: Record<string, { version?: string }>
+  }
+  lock.packages['node_modules/minimist'] = { version: '1.2.6' }
+  lock.dependencies['minimist'] = { version: '1.2.6' }
   writeFileSync(lockPath, JSON.stringify(lock, null, 2))
 }
 

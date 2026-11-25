@@ -54,7 +54,10 @@ describe('IPC payload validation', () => {
       defaultIgnoreLifecycleScripts: true,
       scanTimeoutSeconds: 120,
       backupRetentionDays: 0,
-      minSeverity: null
+      minSeverity: null,
+      testCommand: 'npm test',
+      branchNamePattern: 'fix/{project}-deps-{date}',
+      commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [guardrail]'
     })
     expect(parsed.theme).toBe('dark')
   })
