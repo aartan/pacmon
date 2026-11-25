@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { FolderSearch, ScanSearch, ShieldCheck, Sparkles } from 'lucide-react'
+import { FolderSearch, Layers, ScanSearch, Sparkles, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { PageBody, PageHeader } from '@renderer/components/layout/page-header'
-import { Button, Card, EmptyState, MicroLabel } from '@renderer/components/ui/ui'
+import { Button, Card, EmptyState, Led, MicroLabel } from '@renderer/components/ui/ui'
 import { SeverityBadge, SeverityDot } from '@renderer/components/severity/severity'
 import { api } from '@renderer/lib/api'
 import { formatRelative } from '@renderer/lib/utils'
@@ -17,6 +17,142 @@ function Metric({ label, value, accent }: { label: string; value: string | numbe
       <span className={`font-mono text-2xl font-semibold tracking-tight ${accent ?? 'text-foreground'}`}>{value}</span>
       <span className="text-xs font-medium">{label}</span>
     </div>
+  )
+}
+
+function BulkPanel({ projects }: { projects: Array<{ id: string; name: string; path: string }> }) {
+  const settings = useAppStore((s) => s.settings)
+  const bulk = useAppStore((s) => s.bulk)
+  const bulkResults = useAppStore((s) => s.bulkResults)
+  const setBulkResults = useAppStore((s) => s.setBulkResults)
+  const clearBulkProgress = useAppStore((s) => s.clearBulkProgress)
+  const refreshProjects = useAppStore((s) => s.refreshProjects)
+  const refreshHistory = useAppStore((s) => s.refreshHistory)
+  const [error, setError] = useState<string | null>(null)
+  const [running, setRunning] = useState(false)
+
+  const busy = bulk.active || running
+  const scannedAll = bulkResults && 'results' in bulkResults && bulkResults.results.some((r) => r.ok && (r as { summary?: ScanSummary }).summary)
+
+  const scanAll = async () => {
+    if (running) return
+    setRunning(true)
+    setError(null)
+    setBulkResults(null)
+    try {
+      const result = await api.scanAll({
+        options: {
+          includeDev: settings.defaultIncludeDev,
+          timeoutSeconds: settings.scanTimeoutSeconds,
+          minSeverity: settings.minSeverity
+        }
+      })
+      setBulkResults(result)
+      await Promise.all([refreshProjects(), refreshHistory()])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setRunning(false)
+      clearBulkProgress()
+    }
+  }
+
+  const fixAll = async () => {
+    if (running) return
+    setRunning(true)
+    setError(null)
+    setBulkResults(null)
+    try {
+      const result = await api.remediateAll({
+        ignoreLifecycleScripts: settings.defaultIgnoreLifecycleScripts
+      })
+      setBulkResults(result)
+      await Promise.all([refreshProjects(), refreshHistory()])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setRunning(false)
+      clearBulkProgress()
+    }
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Layers className="h-4 w-4 text-accent" />
+          <MicroLabel>Bulk operations</MicroLabel>
+        </div>
+        {bulk.active && bulk.progress && (
+          <span className="flex items-center gap-2 font-mono text-[11px] text-muted">
+            <Led tone="accent" blink />
+            {bulk.progress.index}/{bulk.progress.total} · {bulk.progress.message}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Button variant="primary" size="sm" loading={busy} disabled={busy || projects.length === 0} onClick={scanAll}>
+          <ScanSearch className="h-3.5 w-3.5" />
+          Scan all projects
+        </Button>
+        <Button size="sm" loading={busy} disabled={busy || !scannedAll} onClick={fixAll}>
+          <Wrench className="h-3.5 w-3.5" />
+          Fix all (safe fixes)
+        </Button>
+        <span className="text-[11px] leading-relaxed text-faint">
+          {projects.length} registered project{projects.length === 1 ? '' : 's'} · transitive dependency overrides are applied per project
+        </span>
+      </div>
+
+      {error && (
+        <p className="mt-3 rounded-none border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
+          {error}
+        </p>
+      )}
+
+      {bulkResults && (
+        <div className="mt-4 divide-y divide-hairline rounded-none border border-hairline">
+          {('results' in bulkResults ? bulkResults.results : []).map((r) => {
+            const summary = 'summary' in r ? (r.summary as ScanSummary | null) : null
+            const remediated = 'resolved' in r
+            return (
+              <div key={r.projectId} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{r.projectName}</p>
+                  {r.error && <p className="mt-0.5 truncate font-mono text-[10px] text-faint">{r.error}</p>}
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {r.ok ? (
+                    <>
+                      {summary && (
+                        <div className="flex items-center gap-1.5">
+                          {SEVERITY_KEYS.filter((k) => summary[k] > 0).map((k) => (
+                            <span key={k} className="flex items-center gap-1 font-mono text-[11px] text-muted">
+                              <SeverityDot severity={k as Severity} />
+                              {summary[k]}
+                            </span>
+                          ))}
+                          {summary.total === 0 && <span className="font-mono text-[11px] text-ok">clean</span>}
+                        </div>
+                      )}
+                      {remediated && (
+                        <span className="font-mono text-[11px] text-muted">
+                          {(r as { resolved: number }).resolved} resolved · {(r as { remaining: number }).remaining} remaining
+                        </span>
+                      )}
+                      <Led tone="ok" />
+                    </>
+                  ) : (
+                    <Led tone="warn" />
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Card>
   )
 }
 
@@ -65,7 +201,7 @@ export function DashboardView() {
   return (
     <>
       <PageHeader
-        label="01 // Overview"
+        label="Overview"
         title="Security posture"
         description="A local-first look at the projects you scan with Guardrail. Nothing leaves this machine except dependency names and versions, queried against public advisory databases."
         actions={
@@ -77,7 +213,7 @@ export function DashboardView() {
       />
       <PageBody>
         {error && (
-          <p className="mb-6 rounded-md border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
+          <p className="mb-6 rounded-none border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
             {error}
           </p>
         )}
@@ -96,6 +232,8 @@ export function DashboardView() {
           />
         ) : (
           <div className="space-y-8">
+            <BulkPanel projects={projects} />
+
             <Card>
               <MicroLabel>Outstanding</MicroLabel>
               <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
@@ -108,11 +246,12 @@ export function DashboardView() {
                 <div className="flex items-center gap-2 text-sm">
                   {posture.total === 0 ? (
                     <>
-                      <ShieldCheck className="h-4 w-4 text-ok" />
+                      <Led tone="ok" />
                       <span className="text-ok">No known vulnerabilities across your projects.</span>
                     </>
                   ) : (
                     <>
+                      <Led tone="warn" />
                       {cleanProjects.length > 0 && (
                         <span className="text-muted">
                           {cleanProjects.length} project{cleanProjects.length === 1 ? '' : 's'} clean.
@@ -135,7 +274,7 @@ export function DashboardView() {
                   View all
                 </button>
               </div>
-              <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface">
+              <div className="divide-y divide-hairline rounded-none border border-hairline bg-surface">
                 {scannedProjects.slice(0, 5).map((p) => (
                   <button
                     key={p.id}
@@ -160,7 +299,7 @@ export function DashboardView() {
                         </div>
                       ) : (
                         <span className="flex items-center gap-1 text-[11px] text-ok">
-                          <ShieldCheck className="h-3.5 w-3.5" /> clean
+                          <Led tone="ok" /> clean
                         </span>
                       )}
                     </div>
@@ -186,7 +325,7 @@ export function DashboardView() {
               {recentScans.length === 0 ? (
                 <p className="text-sm text-muted">No scans recorded yet.</p>
               ) : (
-                <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface">
+                <div className="divide-y divide-hairline rounded-none border border-hairline bg-surface">
                   {recentScans.map((s) => (
                     <div key={s.id} className="flex items-center justify-between gap-4 px-5 py-3.5">
                       <div className="min-w-0">
@@ -200,11 +339,11 @@ export function DashboardView() {
                         {s.summary.high > 0 && <SeverityBadge severity="high" />}
                         {s.summary.total === 0 && (
                           <span className="flex items-center gap-1 text-[11px] text-ok">
-                            <ShieldCheck className="h-3.5 w-3.5" /> clean
+                            <Led tone="ok" /> clean
                           </span>
                         )}
                         {s.remediationId && (
-                          <span className="flex items-center gap-1 rounded-full border border-ok/30 bg-ok-soft px-2 py-0.5 font-mono text-[10px] text-ok">
+                          <span className="flex items-center gap-1 rounded-none border border-ok/30 bg-ok-soft px-2 py-0.5 font-mono text-[10px] text-ok">
                             <Sparkles className="h-3 w-3" /> remediated
                           </span>
                         )}
