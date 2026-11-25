@@ -89,6 +89,8 @@ function augmentedEnv(): Record<string, string> {
   return env
 }
 
+export { augmentedEnv }
+
 export class PackageManagerExecutor implements CommandExecutor {
   async run(
     argv: string[],
@@ -162,5 +164,73 @@ export async function detectPackageManager(pm: PackageManager): Promise<PackageM
     return { available: true, version }
   } catch {
     return { available: false, version: null }
+  }
+}
+
+/**
+ * Runs user-configured test commands for a project. The command is parsed
+ * into argv (never executed through a shell) and the executable is
+ * restricted to the package-manager allowlist.
+ */
+export class ProjectTestRunner {
+  async run(
+    argv: string[],
+    opts: { cwd: string; timeoutMs: number; signal?: AbortSignal; onOutput?: (chunk: string) => void }
+  ): Promise<{ exitCode: number | null; stdout: string; stderr: string; error: string | null }> {
+    const executable = argv[0]
+    if (!executable || !ALLOWED_EXECUTABLES.has(executable)) {
+      return {
+        exitCode: null,
+        stdout: '',
+        stderr: '',
+        error: `Refusing to execute untrusted test command: ${executable ?? '<empty>'}`
+      }
+    }
+
+    let stdout = ''
+    let stderr = ''
+    try {
+      const child = execa(executable, argv.slice(1), {
+        cwd: opts.cwd,
+        timeout: opts.timeoutMs,
+        signal: opts.signal,
+        stripFinalNewline: false,
+        windowsHide: true,
+        all: false,
+        env: augmentedEnv()
+      })
+      child.stdout?.on('data', (chunk: Buffer) => {
+        const text = chunk.toString('utf8')
+        stdout = tail(stdout + text)
+        opts.onOutput?.(text)
+      })
+      child.stderr?.on('data', (chunk: Buffer) => {
+        const text = chunk.toString('utf8')
+        stderr = tail(stderr + text)
+        opts.onOutput?.(text)
+      })
+      await child
+      return { exitCode: 0, stdout, stderr, error: null }
+    } catch (e) {
+      const error = e as ExecaError
+      if (error.isCanceled) {
+        return { exitCode: null, stdout, stderr, error: 'Test run was cancelled.' }
+      }
+      if (error.timedOut) {
+        return {
+          exitCode: null,
+          stdout,
+          stderr,
+          error: `Test command timed out after ${Math.round(opts.timeoutMs / 1000)}s.`
+        }
+      }
+      return {
+        exitCode: typeof error.exitCode === 'number' ? error.exitCode : null,
+        stdout: tail(stdout + (error.stdout ?? '')),
+        stderr: tail(stderr + (error.stderr ?? '')),
+        error:
+          (error as Error & { code?: string }).code === 'ENOENT' ? `Command not found: ${executable}` : null
+      }
+    }
   }
 }

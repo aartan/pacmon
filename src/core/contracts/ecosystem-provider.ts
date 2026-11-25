@@ -5,12 +5,16 @@
  */
 import type {
   DetectionResult,
+  OverrideApplyResult,
+  OverridePreview,
   RemediationPlan,
   RemediationResult,
   RemediationApplyOptions,
   ScanOptions,
   ScanReport,
-  VerificationResult
+  VerificationResult,
+  VersionCheckEntry,
+  VersionCheckResult
 } from '../../shared/models'
 
 export interface EcosystemProviderMetadata {
@@ -36,6 +40,14 @@ export interface ScanContext {
 export interface RemediateContext {
   scan: ScanReport
   options: RemediationApplyOptions
+  onProgress?: (message: string) => void
+  signal?: AbortSignal
+}
+
+/** Context for applying transitive dependency overrides (JS ecosystems). */
+export interface OverrideContext {
+  scan: ScanReport
+  ignoreLifecycleScripts: boolean
   onProgress?: (message: string) => void
   signal?: AbortSignal
 }
@@ -88,4 +100,22 @@ export interface EcosystemProvider {
 
   /** Re-scan and diff against a previous report. */
   verify(projectPath: string, previous: ScanReport): Promise<VerificationResult>
+
+  /**
+   * Optional: preview version-scoped transitive dependency overrides for a
+   * scan (npm `overrides`, yarn `resolutions`, pnpm `pnpm.overrides`).
+   */
+  previewOverrides?(scan: ScanReport): Promise<OverridePreview>
+
+  /**
+   * Optional: write the overrides into package.json, run the package manager
+   * install, and verify with a fresh scan.
+   */
+  applyOverrides?(context: OverrideContext): Promise<OverrideApplyResult>
+
+  /**
+   * Optional: verify the installed tree after overrides via the package
+   * manager's `npm ls`-equivalent, per package/version pair.
+   */
+  verifyInstalledVersions?(scan: ScanReport, entries: VersionCheckEntry[]): Promise<VersionCheckResult[]>
 }

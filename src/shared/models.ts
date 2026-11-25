@@ -296,12 +296,155 @@ export interface ScanOptions {
   minSeverity: Severity | null
 }
 
+/** One package/version pair to verify after an override was applied. */
+export interface VersionCheckEntry {
+  package: string
+  from: string
+  to: string
+}
+
+/** Result of verifying installed versions after overrides (`npm ls`). */
+export interface VersionCheckResult extends VersionCheckEntry {
+  ok: boolean
+  /** The vulnerable version is still present in the installed tree. */
+  stillInstalled: boolean
+  /** The target (fixed) version is present in the installed tree. */
+  targetInstalled: boolean
+  output: string
+  error: string | null
+}
+
 export interface RemediationApplyOptions {
   targetIds: string[]
   /** Ignore package lifecycle scripts during install (default true). */
   ignoreLifecycleScripts: boolean
   /** Also apply breaking parent upgrades (requires explicit opt-in). */
   includeBreaking: boolean
+}
+
+/** Where a package manager reads transitive overrides from package.json. */
+export type OverrideField = 'overrides' | 'resolutions' | 'pnpm.overrides'
+
+/** One version-scoped transitive override: only `from` is redirected to `to`. */
+export interface OverrideEntry {
+  package: string
+  /** The exact vulnerable installed version being overridden. */
+  from: string
+  /** The fixed version it is redirected to. */
+  to: string
+  severity: Severity
+  /** Findings (ids) this override is expected to resolve. */
+  resolvesFindings: number
+}
+
+export interface OverridePreview {
+  scanId: string
+  packageManager: PackageManager
+  field: OverrideField
+  entries: OverrideEntry[]
+  manifestPath: string
+  filesToBackup: string[]
+  packageManagerAvailable: boolean
+  packageManagerVersion: string | null
+  /** Display command that will apply the overrides, e.g. `npm install`. */
+  installCommand: string
+  /** Existing override entries for the affected packages that are preserved. */
+  preservesExisting: number
+}
+
+export interface OverrideApplyResult {
+  id: string
+  scanId: string
+  projectId: string
+  startedAt: string
+  finishedAt: string
+  state: RemediationState
+  backupDir: string
+  entries: OverrideEntry[]
+  verification: VerificationResult | null
+  error: string | null
+}
+
+/** Whether a configured test command maps to a script in package.json. */
+export interface TestDetectResult {
+  projectId: string
+  command: string
+  /** The package.json script the command invokes, when derivable. */
+  scriptName: string | null
+  /** Whether the command can be run for this project right now. */
+  runnable: boolean
+  reason: string | null
+}
+
+export interface TestRunResult {
+  projectId: string
+  command: string
+  exitCode: number | null
+  passed: boolean
+  /** Tail of the test output (capped). */
+  output: string
+  durationMs: number
+  error: string | null
+}
+
+export interface GitPreview {
+  projectId: string
+  isRepo: boolean
+  currentBranch: string | null
+  /** Working-tree paths reported by `git status --porcelain` (relative). */
+  dirtyPaths: string[]
+  branch: string
+  message: string
+  /** Files Guardrail will stage, relative to the repo root. */
+  filesToCommit: string[]
+  error: string | null
+}
+
+export interface GitCommitResult {
+  branch: string
+  commit: string | null
+  files: string[]
+  error: string | null
+}
+
+export interface BulkScanProjectResult {
+  projectId: string
+  projectName: string
+  ok: boolean
+  summary: ScanSummary | null
+  error: string | null
+}
+
+export interface BulkScanResult {
+  startedAt: string
+  finishedAt: string
+  results: BulkScanProjectResult[]
+}
+
+export interface BulkRemediateProjectResult {
+  projectId: string
+  projectName: string
+  ok: boolean
+  applied: number
+  resolved: number
+  remaining: number
+  error: string | null
+}
+
+export interface BulkRemediateResult {
+  startedAt: string
+  finishedAt: string
+  results: BulkRemediateProjectResult[]
+}
+
+export interface BulkProgress {
+  kind: 'scan' | 'remediate'
+  projectId: string
+  projectName: string
+  index: number
+  total: number
+  phase: string
+  message: string
 }
 
 export interface AppSettings {
@@ -311,4 +454,10 @@ export interface AppSettings {
   scanTimeoutSeconds: number
   backupRetentionDays: number
   minSeverity: Severity | null
+  /** Command run to verify changes, e.g. `npm test`. */
+  testCommand: string
+  /** Branch naming pattern; tokens: {project} {date} {time} {packages}. */
+  branchNamePattern: string
+  /** Commit message pattern; tokens: {project} {date} {time} {packages} {branch}. */
+  commitMessagePattern: string
 }

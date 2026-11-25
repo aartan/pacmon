@@ -5,7 +5,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { CHANNELS, EVENTS } from '../shared/ipc'
 import type { SecurityAppApi } from '../shared/ipc'
-import type { RemediationProgress, ScanProgress } from '../shared/models'
+import type { BulkProgress, RemediationProgress, ScanProgress } from '../shared/models'
 
 const api: SecurityAppApi = {
   getAppInfo: () => ipcRenderer.invoke(CHANNELS.appInfo),
@@ -21,6 +21,15 @@ const api: SecurityAppApi = {
   previewRemediation: (payload) => ipcRenderer.invoke(CHANNELS.remediationPreview, payload),
   applyRemediation: (payload) => ipcRenderer.invoke(CHANNELS.remediationApply, payload),
   rollbackRemediation: (remediationId) => ipcRenderer.invoke(CHANNELS.remediationRollback, remediationId),
+  previewOverrides: (payload) => ipcRenderer.invoke(CHANNELS.overridesPreview, payload),
+  applyOverrides: (payload) => ipcRenderer.invoke(CHANNELS.overridesApply, payload),
+  verifyInstalledVersions: (payload) => ipcRenderer.invoke(CHANNELS.overridesVerifyVersions, payload),
+  detectTests: (projectId) => ipcRenderer.invoke(CHANNELS.testsDetect, projectId),
+  runTests: (payload) => ipcRenderer.invoke(CHANNELS.testsRun, payload),
+  scanAll: (payload) => ipcRenderer.invoke(CHANNELS.bulkScanAll, payload),
+  remediateAll: (payload) => ipcRenderer.invoke(CHANNELS.bulkRemediateAll, payload),
+  previewGitCommit: (payload) => ipcRenderer.invoke(CHANNELS.gitPreview, payload),
+  commitChanges: (payload) => ipcRenderer.invoke(CHANNELS.gitCommit, payload),
   listHistory: () => ipcRenderer.invoke(CHANNELS.historyList),
   getHistoryScan: (scanId) => ipcRenderer.invoke(CHANNELS.historyGet, scanId),
   compareScans: (payload) => ipcRenderer.invoke(CHANNELS.historyCompare, payload),
@@ -37,6 +46,16 @@ const api: SecurityAppApi = {
     const listener = (_event: Electron.IpcRendererEvent, progress: RemediationProgress) => cb(progress)
     ipcRenderer.on(EVENTS.remediationProgress, listener)
     return () => ipcRenderer.removeListener(EVENTS.remediationProgress, listener)
+  },
+  onBulkProgress: (cb: (progress: BulkProgress) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, progress: BulkProgress) => cb(progress)
+    ipcRenderer.on(EVENTS.bulkProgress, listener)
+    return () => ipcRenderer.removeListener(EVENTS.bulkProgress, listener)
+  },
+  onTestOutput: (cb: (chunk: { projectId: string; text: string }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, chunk: { projectId: string; text: string }) => cb(chunk)
+    ipcRenderer.on(EVENTS.testOutput, listener)
+    return () => ipcRenderer.removeListener(EVENTS.testOutput, listener)
   }
 }
 

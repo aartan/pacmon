@@ -5,8 +5,8 @@
  * package-manager execution restricted to the fixed allowlist in exec-service.
  */
 import { app, dialog, ipcMain, type BrowserWindow } from 'electron'
-import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { readFile, stat, writeFile } from 'node:fs/promises'
+import { join, relative } from 'node:path'
 import { z } from 'zod'
 import { CHANNELS, EVENTS, err, ok, type IpcResult } from '../../shared/ipc'
 import {
@@ -14,10 +14,14 @@ import {
   remediationApplyOptionsSchema,
   scanIdSchema,
   scanOptionsSchema,
-  settingsSchema
+  settingsSchema,
+  testCommandSchema
 } from '../../shared/ipc'
 import type {
   AppSettings,
+  BulkRemediateProjectResult,
+  BulkScanProjectResult,
+  OverrideApplyResult,
   ProjectInfo,
   RemediationProgress,
   RemediationResult,
@@ -27,11 +31,15 @@ import type { HistoryStore } from '../services/history-store'
 import type { ProjectRegistry, StoredProject } from '../services/project-registry'
 import type { SettingsStore } from '../services/settings-store'
 import type { AdvisoryService } from '../services/advisory-service'
+import type { GitService } from '../services/git-service'
+import { gitCandidateFiles } from '../services/git-service'
+import type { ProjectTestRunner } from '../services/exec-service'
 import { getJavaScriptProvider } from '../../core/ecosystems/registry'
 import { detectProject, resolveProjectName } from '../../core/detection/detect'
 import { containPath } from '../../core/fs-safety/containment'
 import { pruneBackups, restoreBackup } from '../../core/fs-safety/backup'
 import { diffScans } from '../../core/remediation/verifier'
+import { parseTestCommand } from '../../core/ecosystems/javascript/test-command'
 
 export interface IpcDeps {
   getWindow: () => BrowserWindow | null
@@ -39,6 +47,8 @@ export interface IpcDeps {
   history: HistoryStore
   settings: SettingsStore
   advisories: AdvisoryService
+  git: GitService
+  testRunner: ProjectTestRunner
   backupRootDir: string
 }
 
@@ -87,8 +97,34 @@ const stringPayload = (value: unknown, max = 4096): string => {
   return value
 }
 
+/**
+ * Persist override applications through the remediation table so the
+ * existing rollback channel works for them unchanged.
+ */
+function overrideResultAsRemediation(result: OverrideApplyResult): RemediationResult {
+  return {
+    id: result.id,
+    scanId: result.scanId,
+    projectId: result.projectId,
+    startedAt: result.startedAt,
+    finishedAt: result.finishedAt,
+    state: result.state,
+    backupDir: result.backupDir,
+    applied: result.entries.map((entry) => ({
+      targetId: `override:${entry.package}@${entry.from}`,
+      package: entry.package,
+      from: entry.from,
+      to: entry.to,
+      ok: true,
+      error: null
+    })),
+    verification: result.verification,
+    error: result.error
+  }
+}
+
 export function registerIpc(deps: IpcDeps): void {
-  const { getWindow, registry, history, settings, advisories } = deps
+  const { getWindow, registry, history, settings, advisories, git, testRunner } = deps
 
   handle(CHANNELS.appInfo, () => {
     const provider = getJavaScriptProvider()
@@ -298,6 +334,367 @@ export function registerIpc(deps: IpcDeps): void {
     const rolled: RemediationResult = { ...remediation, state: 'rolled-back' }
     history.saveRemediation(rolled)
     return ok({ restored: outcome.restored, skipped: outcome.skipped })
+  })
+
+  /* --------------------------- transitive overrides ------------------------ */
+
+  const overridesPayload = (payload: unknown) =>
+    z.object({ scanId: scanIdSchema, ignoreLifecycleScripts: z.boolean() }).parse(payload)
+
+  handle(CHANNELS.overridesPreview, async (payload) => {
+    const parsed = overridesPayload(payload)
+    const provider = getJavaScriptProvider()
+    if (!provider?.previewOverrides) return err('JavaScript ecosystem provider is not available')
+    const scan = history.getReport(parsed.scanId)
+    if (!scan) return err('Scan not found.')
+    const preview = await provider.previewOverrides(scan)
+    return ok(preview)
+  })
+
+  handle(CHANNELS.overridesApply, async (payload) => {
+    const parsed = overridesPayload(payload)
+    const win = getWindow()
+    const provider = getJavaScriptProvider()
+    if (!provider?.applyOverrides) return err('JavaScript ecosystem provider is not available')
+    const scan = history.getReport(parsed.scanId)
+    if (!scan) return err('Scan not found.')
+
+    const project = registry.get(scan.projectId)
+    if (!project) return err('Unknown project.')
+
+    try {
+      await containPath(project.path, scan.projectPath)
+    } catch {
+      return err('Project path is no longer accessible.')
+    }
+
+    const result = await provider.applyOverrides({
+      scan,
+      ignoreLifecycleScripts: parsed.ignoreLifecycleScripts,
+      onProgress: (message) => {
+        const progress: RemediationProgress = {
+          projectId: project.id,
+          phase: 'applying',
+          message,
+          current: 0,
+          total: 0
+        }
+        win?.webContents.send(EVENTS.remediationProgress, progress)
+      }
+    })
+
+    // Persist through the remediation table so rollback stays available.
+    const record = overrideResultAsRemediation(result)
+    history.saveRemediation(record)
+    if (result.state === 'complete' && result.verification?.afterScan) {
+      history.insert(result.verification.afterScan, result.id)
+    }
+    return ok(result)
+  })
+
+  handle(CHANNELS.overridesVerifyVersions, async (payload) => {
+    const parsed = z
+      .object({
+        scanId: scanIdSchema,
+        entries: z.array(z.object({ package: z.string().min(1).max(256), from: z.string().min(1).max(64), to: z.string().min(1).max(64) })).max(100)
+      })
+      .parse(payload)
+    const provider = getJavaScriptProvider()
+    if (!provider?.verifyInstalledVersions) return err('JavaScript ecosystem provider is not available')
+    const scan = history.getReport(parsed.scanId)
+    if (!scan) return err('Scan not found.')
+
+    const project = registry.get(scan.projectId)
+    if (!project) return err('Unknown project.')
+
+    try {
+      await containPath(project.path, scan.projectPath)
+    } catch {
+      return err('Project path is no longer accessible.')
+    }
+
+    const results = await provider.verifyInstalledVersions(scan, parsed.entries)
+    return ok({ results })
+  })
+
+  /* --------------------------------- tests --------------------------------- */
+
+  handle(CHANNELS.testsDetect, async (projectId) => {
+    const parsed = projectIdSchema.parse(projectId)
+    const project = registry.get(parsed)
+    if (!project) return err('Unknown project.')
+    const command = settings.get().testCommand
+    const parsedCommand = parseTestCommand(command)
+    if (!parsedCommand) {
+      return ok({
+        projectId: parsed,
+        command,
+        scriptName: null,
+        runnable: false,
+        reason: 'The configured test command cannot be run safely (it must start with npm, pnpm, yarn or bun).'
+      })
+    }
+    if (!parsedCommand.scriptName) {
+      return ok({
+        projectId: parsed,
+        command,
+        scriptName: null,
+        runnable: true,
+        reason: 'Custom command — runs exactly as configured.'
+      })
+    }
+    try {
+      const manifest = JSON.parse(await readFile(join(project.path, 'package.json'), 'utf8')) as {
+        scripts?: Record<string, string>
+      }
+      const found = typeof manifest.scripts?.[parsedCommand.scriptName] === 'string'
+      return ok({
+        projectId: parsed,
+        command,
+        scriptName: parsedCommand.scriptName,
+        runnable: found,
+        reason: found ? null : `No "${parsedCommand.scriptName}" script found in package.json.`
+      })
+    } catch {
+      return ok({
+        projectId: parsed,
+        command,
+        scriptName: parsedCommand.scriptName,
+        runnable: false,
+        reason: 'package.json could not be read.'
+      })
+    }
+  })
+
+  handle(CHANNELS.testsRun, async (payload) => {
+    const parsed = z.object({ projectId: projectIdSchema, command: testCommandSchema }).parse(payload)
+    const project = registry.get(parsed.projectId)
+    if (!project) return err('Unknown project.')
+    const parsedCommand = parseTestCommand(parsed.command)
+    if (!parsedCommand) return err('The configured test command cannot be run safely.')
+    const win = getWindow()
+    const started = Date.now()
+    const run = await testRunner.run(parsedCommand.argv, {
+      cwd: project.path,
+      timeoutMs: 30 * 60 * 1000,
+      onOutput: (text) => {
+        win?.webContents.send(EVENTS.testOutput, { projectId: parsed.projectId, text })
+      }
+    })
+    const passed = run.error === null && run.exitCode === 0
+    return ok({
+      projectId: parsed.projectId,
+      command: parsed.command,
+      exitCode: run.exitCode,
+      passed,
+      output: `${run.stdout}${run.stderr}`.slice(-64 * 1024),
+      durationMs: Date.now() - started,
+      error: run.error
+    })
+  })
+
+  /* ---------------------------------- bulk --------------------------------- */
+
+  handle(CHANNELS.bulkScanAll, async (payload) => {
+    const parsed = z.object({ options: scanOptionsSchema }).parse(payload)
+    const provider = getJavaScriptProvider()
+    if (!provider) return err('JavaScript ecosystem provider is not available')
+    const projects = registry.list()
+    const win = getWindow()
+    const results: BulkScanProjectResult[] = []
+    const startedAt = new Date().toISOString()
+    let index = 0
+    for (const project of projects) {
+      index += 1
+      if (!project.ecosystem) {
+        results.push({
+          projectId: project.id,
+          projectName: project.name,
+          ok: false,
+          summary: null,
+          error: 'No JavaScript ecosystem detected in this folder.'
+        })
+        continue
+      }
+      if (activeScans.has(project.id)) {
+        results.push({
+          projectId: project.id,
+          projectName: project.name,
+          ok: false,
+          summary: null,
+          error: 'A scan is already running for this project.'
+        })
+        continue
+      }
+      const controller = new AbortController()
+      activeScans.set(project.id, controller)
+      const started = Date.now()
+      win?.webContents.send(EVENTS.bulkProgress, {
+        kind: 'scan',
+        projectId: project.id,
+        projectName: project.name,
+        index,
+        total: projects.length,
+        phase: 'scanning',
+        message: `Scanning ${project.name}`
+      })
+      try {
+        await containPath(project.path, project.path)
+        const report = await provider.scan({
+          projectId: project.id,
+          projectPath: project.path,
+          projectName: project.name,
+          options: parsed.options,
+          signal: controller.signal,
+          onProgress: (message) => {
+            const progress: ScanProgress = {
+              projectId: project.id,
+              phase: 'scanning',
+              message,
+              elapsedMs: Date.now() - started
+            }
+            win?.webContents.send(EVENTS.scanProgress, progress)
+          }
+        })
+        history.insert(report)
+        results.push({ projectId: project.id, projectName: project.name, ok: true, summary: report.summary, error: null })
+      } catch (e) {
+        results.push({
+          projectId: project.id,
+          projectName: project.name,
+          ok: false,
+          summary: null,
+          error: e instanceof Error ? e.message : String(e)
+        })
+      } finally {
+        activeScans.delete(project.id)
+      }
+    }
+    pruneBackups(deps.backupRootDir, settings.get().backupRetentionDays).catch(() => {})
+    return ok({ startedAt, finishedAt: new Date().toISOString(), results })
+  })
+
+  handle(CHANNELS.bulkRemediateAll, async (payload) => {
+    const parsed = z.object({ ignoreLifecycleScripts: z.boolean() }).parse(payload)
+    const provider = getJavaScriptProvider()
+    if (!provider) return err('JavaScript ecosystem provider is not available')
+    const projects = registry.list()
+    const win = getWindow()
+    const results: BulkRemediateProjectResult[] = []
+    const startedAt = new Date().toISOString()
+    let index = 0
+    for (const project of projects) {
+      index += 1
+      const note = (error: string | null, applied = 0, resolved = 0, remaining = 0, ok = false) => ({
+        projectId: project.id,
+        projectName: project.name,
+        ok,
+        applied,
+        resolved,
+        remaining,
+        error
+      })
+      const latest = history.latestForProject(project.id)
+      if (!latest) {
+        results.push(note('No scan yet — scan this project first.'))
+        continue
+      }
+      const scan = history.getReport(latest.id)
+      if (!scan?.remediationPlan) {
+        results.push(note('No remediation plan is available for the latest scan.'))
+        continue
+      }
+      const safeIds = scan.remediationPlan.targets.filter((t) => t.safe && !t.breaking).map((t) => t.id)
+      if (safeIds.length === 0) {
+        results.push(note(null, 0, 0, scan.summary.total, true))
+        continue
+      }
+      win?.webContents.send(EVENTS.bulkProgress, {
+        kind: 'remediate',
+        projectId: project.id,
+        projectName: project.name,
+        index,
+        total: projects.length,
+        phase: 'applying',
+        message: `Fixing ${project.name}`
+      })
+      try {
+        await containPath(project.path, scan.projectPath)
+        const result = await provider.remediate({
+          scan,
+          options: {
+            targetIds: safeIds,
+            ignoreLifecycleScripts: parsed.ignoreLifecycleScripts,
+            includeBreaking: false
+          },
+          onProgress: (message) => {
+            const progress: RemediationProgress = {
+              projectId: project.id,
+              phase: 'applying',
+              message,
+              current: 0,
+              total: 0
+            }
+            win?.webContents.send(EVENTS.remediationProgress, progress)
+          }
+        })
+        history.saveRemediation(result)
+        if (result.verification?.afterScan) {
+          history.insert(result.verification.afterScan, result.id)
+        }
+        const ver = result.verification
+        results.push({
+          projectId: project.id,
+          projectName: project.name,
+          ok: result.state === 'complete',
+          applied: result.applied.length,
+          resolved: ver?.resolvedIds.length ?? 0,
+          remaining: ver?.remainingIds.length ?? 0,
+          error: result.error
+        })
+      } catch (e) {
+        results.push(note(e instanceof Error ? e.message : String(e)))
+      }
+    }
+    return ok({ startedAt, finishedAt: new Date().toISOString(), results })
+  })
+
+  /* ---------------------------------- git ---------------------------------- */
+
+  const gitCommitPayload = (payload: unknown) =>
+    z.object({ projectId: projectIdSchema, branch: z.string().min(1).max(300), message: z.string().min(1).max(600) }).parse(payload)
+
+  handle(CHANNELS.gitPreview, async (payload) => {
+    const parsed = gitCommitPayload(payload)
+    const project = registry.get(parsed.projectId)
+    if (!project) return err('Unknown project.')
+    const info = await git.inspect(project.path)
+    const existing: string[] = []
+    for (const file of gitCandidateFiles(project.path)) {
+      if (await stat(file).then(() => true).catch(() => false)) existing.push(file)
+    }
+    return ok({
+      projectId: parsed.projectId,
+      isRepo: info.isRepo,
+      currentBranch: info.currentBranch,
+      dirtyPaths: info.dirtyPaths,
+      branch: parsed.branch,
+      message: parsed.message,
+      filesToCommit: existing.map((f) => relative(project.path, f)),
+      error: info.error
+    })
+  })
+
+  handle(CHANNELS.gitCommit, async (payload) => {
+    const parsed = gitCommitPayload(payload)
+    const project = registry.get(parsed.projectId)
+    if (!project) return err('Unknown project.')
+    const existing: string[] = []
+    for (const file of gitCandidateFiles(project.path)) {
+      if (await stat(file).then(() => true).catch(() => false)) existing.push(file)
+    }
+    const result = await git.createBranchAndCommit(project.path, parsed.branch, parsed.message, existing)
+    return ok(result)
   })
 
   /* -------------------------------- history -------------------------------- */

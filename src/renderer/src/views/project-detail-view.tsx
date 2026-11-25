@@ -18,7 +18,7 @@ const FILTER_SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low', 'inf
 
 function SummaryCard({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
-    <div className="rounded-xl border border-hairline bg-surface p-4 shadow-sm">
+    <div className="rounded-none border border-hairline bg-surface p-4">
       <p className={`font-mono text-2xl font-semibold tracking-tight ${tone ?? 'text-foreground'}`}>{value}</p>
       <p className="mt-0.5 text-xs font-medium">{label}</p>
     </div>
@@ -155,17 +155,17 @@ export function ProjectDetailView() {
               <p className="mt-1 font-mono text-[11px] text-faint">{project.path}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {project.packageManager && (
-                  <span className="rounded-full border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
+                  <span className="rounded-none border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
                     {project.packageManager}
                   </span>
                 )}
                 {project.lockfile && (
-                  <span className="rounded-full border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
+                  <span className="rounded-none border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
                     {project.lockfile}
                   </span>
                 )}
                 {report && (
-                  <span className="rounded-full border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
+                  <span className="rounded-none border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
                     scanned {formatRelative(report.scannedAt)}
                   </span>
                 )}
@@ -197,7 +197,7 @@ export function ProjectDetailView() {
           </div>
 
           {scanning && (
-            <div className="mt-4 rounded-lg border border-hairline bg-surface p-3">
+            <div className="mt-4 rounded-none border border-hairline bg-surface p-3">
               <div className="mb-2 flex items-center justify-between font-mono text-[11px] text-muted">
                 <span className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
@@ -207,14 +207,14 @@ export function ProjectDetailView() {
                   {scanProgress ? `${(scanProgress.elapsedMs / 1000).toFixed(0)}s` : ''}
                 </span>
               </div>
-              <div className="h-1 overflow-hidden rounded-full bg-surface-2">
-                <div className="progress-indeterminate h-full w-1/3 rounded-full bg-accent" />
+              <div className="h-1 overflow-hidden bg-surface-2">
+                <div className="progress-indeterminate h-full w-1/3 bg-foreground" />
               </div>
             </div>
           )}
 
           {scanError && (
-            <p className="mt-4 rounded-md border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
+            <p className="mt-4 rounded-none border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
               {scanError}
             </p>
           )}
@@ -243,7 +243,7 @@ export function ProjectDetailView() {
         ) : (
           <div className="space-y-6">
             {pendingAfterScan && (
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-ok/30 bg-ok-soft px-4 py-3">
+              <div className="flex items-center justify-between gap-4 rounded-none border border-ok/30 bg-ok-soft px-4 py-3">
                 <p className="text-sm text-foreground">
                   A fresh post-remediation scan is available.
                 </p>
@@ -302,7 +302,7 @@ export function ProjectDetailView() {
                           })
                         }}
                         className={cn(
-                          'flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors',
+                          'flex items-center gap-1.5 rounded-none border px-2.5 py-1 font-mono text-[11px] transition-colors',
                           active
                             ? 'border-accent/40 bg-accent-soft text-foreground'
                             : 'border-hairline bg-surface text-muted hover:text-foreground'
@@ -329,12 +329,12 @@ export function ProjectDetailView() {
                     placeholder="Filter by package or CVE…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="h-8 w-52 rounded-md border border-hairline bg-surface px-2.5 text-xs outline-none transition-colors placeholder:text-faint focus:border-accent/50"
+                    className="h-8 w-52 rounded-none border border-hairline bg-surface px-2.5 text-xs outline-none transition-colors placeholder:text-faint focus:border-accent/50"
                   />
                   <select
                     value={sortKey}
                     onChange={(e) => setSortKey(e.target.value as SortKey)}
-                    className="ml-auto h-8 rounded-md border border-hairline bg-surface px-2 text-xs text-muted outline-none focus:border-accent/50"
+                    className="ml-auto h-8 rounded-none border border-hairline bg-surface px-2 text-xs text-muted outline-none focus:border-accent/50"
                   >
                     <option value="severity">Sort: severity</option>
                     <option value="cvss">Sort: CVSS</option>
@@ -344,7 +344,7 @@ export function ProjectDetailView() {
 
                 {/* List + detail */}
                 <div className={cn('grid gap-4', selected && 'lg:grid-cols-[1fr_400px]')}>
-                  <div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface">
+                  <div className="divide-y divide-hairline overflow-hidden rounded-none border border-hairline bg-surface">
                     {filtered.map((v) => (
                       <VulnerabilityRow key={v.id} vuln={v} selected={selected?.id === v.id} onSelect={setSelected} />
                     ))}
@@ -353,14 +353,14 @@ export function ProjectDetailView() {
                     )}
                   </div>
                   {selected && (
-                    <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-sm lg:sticky lg:top-6 lg:h-[560px]">
+                    <div className="overflow-hidden rounded-none border border-hairline bg-surface lg:sticky lg:top-6 lg:h-[560px]">
                       <VulnerabilityDetail vuln={selected} onClose={() => setSelected(null)} />
                     </div>
                   )}
                 </div>
 
                 {/* Remediation */}
-                <section className="rounded-xl border border-hairline bg-surface p-5 shadow-sm">
+                <section className="rounded-none border border-hairline bg-surface p-5">
                   <div className="mb-4 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-accent" />
                     <h2 className="text-sm font-semibold tracking-tight">Remediation</h2>
@@ -371,9 +371,15 @@ export function ProjectDetailView() {
                   <RemediationPanel
                     key={report.id}
                     report={report}
+                    project={project}
                     defaultIgnoreScripts={settings.defaultIgnoreLifecycleScripts}
                     onCompleted={(result) => {
                       if (result.verification?.afterScan) setPendingAfterScan(result.verification.afterScan)
+                      refreshHistory()
+                      refreshProjects()
+                    }}
+                    onScanUpdated={(scan) => {
+                      setPendingAfterScan(scan)
                       refreshHistory()
                       refreshProjects()
                     }}

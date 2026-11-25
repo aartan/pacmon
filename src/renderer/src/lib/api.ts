@@ -28,6 +28,23 @@ export const api = {
     unwrap(window.securityApp.applyRemediation(payload)),
   rollbackRemediation: (remediationId: string) =>
     unwrap(window.securityApp.rollbackRemediation(remediationId)),
+  previewOverrides: (payload: Parameters<Window['securityApp']['previewOverrides']>[0]) =>
+    unwrap(window.securityApp.previewOverrides(payload)),
+  applyOverrides: (payload: Parameters<Window['securityApp']['applyOverrides']>[0]) =>
+    unwrap(window.securityApp.applyOverrides(payload)),
+  verifyInstalledVersions: (payload: Parameters<Window['securityApp']['verifyInstalledVersions']>[0]) =>
+    unwrap(window.securityApp.verifyInstalledVersions(payload)),
+  detectTests: (projectId: string) => unwrap(window.securityApp.detectTests(projectId)),
+  runTests: (payload: Parameters<Window['securityApp']['runTests']>[0]) =>
+    unwrap(window.securityApp.runTests(payload)),
+  scanAll: (payload: Parameters<Window['securityApp']['scanAll']>[0]) =>
+    unwrap(window.securityApp.scanAll(payload)),
+  remediateAll: (payload: Parameters<Window['securityApp']['remediateAll']>[0]) =>
+    unwrap(window.securityApp.remediateAll(payload)),
+  previewGitCommit: (payload: Parameters<Window['securityApp']['previewGitCommit']>[0]) =>
+    unwrap(window.securityApp.previewGitCommit(payload)),
+  commitChanges: (payload: Parameters<Window['securityApp']['commitChanges']>[0]) =>
+    unwrap(window.securityApp.commitChanges(payload)),
   listHistory: () => unwrap(window.securityApp.listHistory()),
   getHistoryScan: (scanId: string) => unwrap(window.securityApp.getHistoryScan(scanId)),
   compareScans: (payload: Parameters<Window['securityApp']['compareScans']>[0]) =>
@@ -40,5 +57,9 @@ export const api = {
   onScanProgress: (cb: Parameters<Window['securityApp']['onScanProgress']>[0]) =>
     window.securityApp.onScanProgress(cb),
   onRemediationProgress: (cb: Parameters<Window['securityApp']['onRemediationProgress']>[0]) =>
-    window.securityApp.onRemediationProgress(cb)
+    window.securityApp.onRemediationProgress(cb),
+  onBulkProgress: (cb: Parameters<Window['securityApp']['onBulkProgress']>[0]) =>
+    window.securityApp.onBulkProgress(cb),
+  onTestOutput: (cb: Parameters<Window['securityApp']['onTestOutput']>[0]) =>
+    window.securityApp.onTestOutput(cb)
 }

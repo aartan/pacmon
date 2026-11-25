@@ -13,7 +13,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultIgnoreLifecycleScripts: true,
   scanTimeoutSeconds: 300,
   backupRetentionDays: 14,
-  minSeverity: null
+  minSeverity: null,
+  testCommand: 'npm test',
+  branchNamePattern: 'fix/{project}-deps-{date}',
+  commitMessagePattern: 'fix(deps): remediate vulnerable dependencies [guardrail]'
 }
 
 export class SettingsStore {
