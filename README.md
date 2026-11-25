@@ -2,7 +2,7 @@
 
 Local-first package vulnerability monitoring and remediation. Pacmon scans your
 JavaScript projects for known vulnerabilities, shows you exactly what's wrong and
-why, fixes it in one click, and proves the fix with your own test suite — entirely
+why, fixes it in one click, and proves the fix with your own test suite entirely
 on your machine. No account, no cloud, no telemetry; dependency names and versions
 are the only data that leaves it, queried against the public OSV advisory database.
 
