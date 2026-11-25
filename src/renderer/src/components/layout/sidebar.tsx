@@ -11,24 +11,14 @@ const NAV = [
   { to: '/settings', label: 'Settings', icon: Settings, end: false }
 ]
 
-function ShieldMark({ className }: { className?: string }) {
+/** Guardrail mark: angled rail bars, mono-console style. */
+function GuardrailMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 1024 1024" fill="none" className={className} aria-hidden>
-      <path
-        d="M512 236 L700 316 V496 C700 626 622 726 512 788 C402 726 324 626 324 496 V316 L512 236 Z"
-        stroke="currentColor"
-        strokeOpacity="0.35"
-        strokeWidth="60"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path
-        d="M432 512 L488 568 L600 424"
-        stroke="currentColor"
-        strokeWidth="80"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M4 20 L9 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M11 20 L16 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M18 20 L23 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" opacity="0.45" />
+      <path d="M2.5 21.5 H21.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.55" />
     </svg>
   )
 }
@@ -38,10 +28,10 @@ export function Sidebar() {
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   return (
-    <aside className="flex w-52 shrink-0 flex-col border-r border-hairline bg-surface/60">
+    <aside className="flex w-52 shrink-0 flex-col border-r border-hairline bg-surface-2/50">
       <div className="flex h-14 items-center gap-2.5 border-b border-hairline px-4">
-        <ShieldMark className="h-5 w-5 text-accent" />
-        <span className="text-sm font-medium tracking-tight">Guardrail</span>
+        <GuardrailMark className="h-5 w-5 text-foreground" />
+        <span className="font-display text-[17px] font-medium tracking-tight">Guardrail</span>
       </div>
 
       <nav className="flex-1 space-y-0.5 px-2 py-3" aria-label="Primary">
@@ -52,8 +42,10 @@ export function Sidebar() {
             end={item.end}
             className={({ isActive }) =>
               cn(
-                'relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
-                isActive ? 'text-foreground' : 'text-muted hover:text-foreground'
+                'relative flex items-center gap-2.5 rounded-none border-l-2 border-transparent px-2.5 py-2 text-sm transition-colors',
+                isActive
+                  ? 'border-foreground bg-accent-soft text-foreground'
+                  : 'text-muted hover:bg-surface hover:text-foreground'
               )
             }
           >
@@ -62,7 +54,7 @@ export function Sidebar() {
                 {isActive && (
                   <motion.span
                     layoutId="sidebar-pill"
-                    className="absolute inset-0 rounded-md border border-hairline bg-accent-soft"
+                    className="absolute inset-y-1 right-1 w-0.5 bg-foreground"
                     transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                   />
                 )}
@@ -78,7 +70,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => setTheme(isDark ? 'light' : 'dark')}
-          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted transition-colors hover:text-foreground"
+          className="flex w-full items-center gap-2.5 rounded-none px-2.5 py-2 text-sm text-muted transition-colors hover:bg-surface hover:text-foreground"
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.span
@@ -94,6 +86,9 @@ export function Sidebar() {
           </AnimatePresence>
           {isDark ? 'Light mode' : 'Dark mode'}
         </button>
+        <p className="mt-2 px-2.5 font-mono text-[9px] uppercase tracking-[0.18em] text-faint/70">
+          local-first · no cloud
+        </p>
       </div>
     </aside>
   )

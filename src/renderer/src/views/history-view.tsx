@@ -43,9 +43,9 @@ function DiffList({ title, vulns, tone }: { title: string; vulns: Vulnerability[
         </span>
       </div>
       {vulns.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-hairline px-4 py-6 text-center text-xs text-faint">None</p>
+        <p className="rounded-none border border-dashed border-hairline px-4 py-6 text-center text-xs text-faint">None</p>
       ) : (
-        <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface">
+        <div className="divide-y divide-hairline rounded-none border border-hairline bg-surface">
           {vulns.map((v) => (
             <VulnerabilityRow key={v.id} vuln={v} selected={selected?.id === v.id} onSelect={setSelected} />
           ))}
@@ -111,7 +111,7 @@ export function HistoryView() {
   return (
     <>
       <PageHeader
-        label="03 // Archive"
+        label="Archive"
         title="Scan history"
         description="Every scan is kept locally. Select two scans to compare how the project's exposure changed."
         actions={
@@ -123,13 +123,13 @@ export function HistoryView() {
       />
       <PageBody>
         {error && (
-          <p className="mb-6 rounded-md border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
+          <p className="mb-6 rounded-none border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
             {error}
           </p>
         )}
 
         {comparison ? (
-          <div className="mb-8 rounded-xl border border-hairline bg-surface p-5 shadow-sm">
+          <div className="mb-8 rounded-none border border-hairline bg-surface p-5">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <MicroLabel>Comparison</MicroLabel>
@@ -183,7 +183,7 @@ export function HistoryView() {
                     </button>
                   </div>
                   <p className="mb-2 font-mono text-[11px] text-faint">{path}</p>
-                  <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface">
+                  <div className="divide-y divide-hairline rounded-none border border-hairline bg-surface">
                     {records.map((r) => {
                       const isSelected = selectedIds.includes(r.id)
                       return (
@@ -215,7 +215,7 @@ export function HistoryView() {
                               onClick={() => exportScan(r.id)}
                               title="Export as JSON"
                               aria-label="Export as JSON"
-                              className="flex h-7 w-7 items-center justify-center rounded-md text-faint transition-colors hover:bg-surface-2 hover:text-foreground"
+                              className="flex h-7 w-7 items-center justify-center rounded-none text-faint transition-colors hover:bg-surface-2 hover:text-foreground"
                             >
                               <Download className="h-3.5 w-3.5" />
                             </button>
@@ -224,7 +224,7 @@ export function HistoryView() {
                               onClick={() => remove(r.id)}
                               title="Delete scan"
                               aria-label="Delete scan"
-                              className="flex h-7 w-7 items-center justify-center rounded-md text-faint transition-colors hover:bg-critical-soft hover:text-critical"
+                              className="flex h-7 w-7 items-center justify-center rounded-none text-faint transition-colors hover:bg-critical-soft hover:text-critical"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>

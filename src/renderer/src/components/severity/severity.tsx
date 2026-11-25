@@ -65,13 +65,13 @@ export function SeverityDot({ severity, className }: { severity: Severity; class
   return <span aria-hidden className={cn('inline-block h-2 w-2 rounded-full', SEVERITY_META[severity].dot, className)} />
 }
 
-/** Pill badge with severity label. */
+/** Tag badge with severity label. */
 export function SeverityBadge({ severity, className }: { severity: Severity; className?: string }) {
   const meta = SEVERITY_META[severity]
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] font-medium',
+        'inline-flex items-center gap-1.5 rounded-none border px-2 py-0.5 font-mono text-[11px] font-medium',
         meta.text,
         meta.bg,
         meta.border,

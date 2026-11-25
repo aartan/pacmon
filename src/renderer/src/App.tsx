@@ -19,8 +19,8 @@ export default function App() {
   if (!ready) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <div className="h-1 w-32 overflow-hidden rounded-full bg-surface-2">
-          <div className="progress-indeterminate h-full w-1/3 rounded-full bg-accent" />
+        <div className="h-1 w-32 overflow-hidden bg-surface-2">
+          <div className="progress-indeterminate h-full w-1/3 bg-foreground" />
         </div>
       </div>
     )

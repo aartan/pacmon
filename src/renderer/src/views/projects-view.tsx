@@ -43,7 +43,7 @@ export function ProjectsView() {
   return (
     <>
       <PageHeader
-        label="02 // Projects"
+        label="Projects"
         title="Projects"
         description="Folders you scan with Guardrail. Detection runs locally against the project files."
         actions={
@@ -55,7 +55,7 @@ export function ProjectsView() {
       />
       <PageBody>
         {error && (
-          <p className="mb-6 rounded-md border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
+          <p className="mb-6 rounded-none border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical">
             {error}
           </p>
         )}
@@ -77,7 +77,7 @@ export function ProjectsView() {
             {projects.map((p) => (
               <div
                 key={p.id}
-                className="group flex flex-col rounded-xl border border-hairline bg-surface p-5 shadow-sm transition-all duration-300 hover:border-accent/40 hover:shadow-md"
+                className="group flex flex-col rounded-none border border-hairline bg-surface p-5 transition-colors hover:border-accent/40"
               >
                 <button
                   type="button"
@@ -94,16 +94,16 @@ export function ProjectsView() {
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-1.5">
-                    <span className="rounded-full border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
+                    <span className="rounded-none border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
                       {p.ecosystemLabel}
                     </span>
                     {p.packageManager && (
-                      <span className="rounded-full border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
+                      <span className="rounded-none border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
                         {p.packageManager}
                       </span>
                     )}
                     {p.lockfile && (
-                      <span className="rounded-full border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
+                      <span className="rounded-none border border-hairline bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
                         {p.lockfile}
                       </span>
                     )}
@@ -137,7 +137,7 @@ export function ProjectsView() {
                     onClick={() => removeProject(p.id, p.name)}
                     aria-label={`Remove ${p.name}`}
                     title="Remove project"
-                    className="flex h-7 w-7 items-center justify-center rounded-md text-faint transition-colors hover:bg-critical-soft hover:text-critical"
+                    className="flex h-7 w-7 items-center justify-center rounded-none text-faint transition-colors hover:bg-critical-soft hover:text-critical"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

@@ -7,6 +7,8 @@ import { HistoryStore } from './services/history-store'
 import { ProjectRegistry } from './services/project-registry'
 import { SettingsStore } from './services/settings-store'
 import { AdvisoryService } from './services/advisory-service'
+import { GitService } from './services/git-service'
+import { ProjectTestRunner } from './services/exec-service'
 import { getJavaScriptProvider } from '../core/ecosystems/registry'
 
 let mainWindow: BrowserWindow | null = null
@@ -20,7 +22,7 @@ function createWindow(): void {
     show: false,
     title: 'Guardrail',
     autoHideMenuBar: true,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#f6f7f9',
     ...(existsSync(join(__dirname, '../../build/icon.png'))
       ? { icon: join(__dirname, '../../build/icon.png') }
       : {}),
@@ -66,6 +68,8 @@ app.whenReady().then(() => {
   const registry = new ProjectRegistry(userData)
   const settings = new SettingsStore(userData)
   const advisories = new AdvisoryService(history)
+  const git = new GitService()
+  const testRunner = new ProjectTestRunner()
 
   bootstrapProviders()
   registerIpc({
@@ -74,6 +78,8 @@ app.whenReady().then(() => {
     history,
     settings,
     advisories,
+    git,
+    testRunner,
     backupRootDir: join(userData, 'backups')
   })
 

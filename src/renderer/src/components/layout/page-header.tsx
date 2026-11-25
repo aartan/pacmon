@@ -14,11 +14,11 @@ export function PageHeader({
 }) {
   return (
     <div className="border-b border-hairline">
-      <div className="mx-auto max-w-5xl px-6 py-8">
+      <div className="mx-auto max-w-5xl px-6 py-7">
         <div className="flex items-start justify-between gap-6">
           <div>
             <MicroLabel>{label}</MicroLabel>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h1>
+            <h1 className="mt-2 text-[22px] font-semibold tracking-tight">{title}</h1>
             {description && <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">{description}</p>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

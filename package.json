@@ -28,8 +28,9 @@
     "semver": "^7.7.3"
   },
   "devDependencies": {
-    "@fontsource-variable/geist": "^5.3.0",
-    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/newsreader": "^5.2.8",
+    "@fontsource-variable/space-grotesk": "^5.2.8",
     "@swc/core": "^1.16.22",
     "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^24.0.0",
