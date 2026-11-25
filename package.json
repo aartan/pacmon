@@ -21,7 +21,8 @@
     "build:linux": "npm run build && electron-builder --linux",
     "build:mac": "npm run build && electron-builder --mac",
     "build:win": "npm run build && electron-builder --win",
-    "icons": "node scripts/build-icon.mjs"
+    "icons": "node scripts/build-icon.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "cve-lite-cli": "1.42.0",
@@ -46,6 +47,7 @@
     "framer-motion": "^14.14.0",
     "jsdom": "^31.0.1",
     "lucide-react": "^1.79.0",
+    "playwright-core": "^1.65.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.7",

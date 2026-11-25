@@ -1,103 +1,142 @@
 # Pacmon
 
-**Local-first package vulnerability monitoring and remediation.**
+Local-first package vulnerability monitoring and remediation. Pacmon scans your
+JavaScript projects for known vulnerabilities, shows you exactly what's wrong and
+why, fixes it in one click, and proves the fix with your own test suite — entirely
+on your machine. No account, no cloud, no telemetry; dependency names and versions
+are the only data that leaves it, queried against the public OSV advisory database.
 
-Pacmon scans your JavaScript projects for known vulnerabilities, shows you exactly what's wrong and why, fixes it in one click, and proves the fix with your own test suite — entirely on your machine. No cloud account, no telemetry, no sending your code anywhere. Dependency names and versions are the only data that leave the machine during a scan, queried against the public [OSV](https://osv.dev) advisory database.
-
-Built with Electron, React, and TypeScript. Scanning is powered by [cve-lite-cli](https://github.com/OWASP/cve-lite-cli) (OWASP).
+![Pacmon dashboard showing security posture, bulk operations, and recent scans](docs/screenshots/dashboard.webp)
 
 ## Features
 
-### Scan
-
-- **JavaScript/Node.js** — npm, Yarn, pnpm, and Bun projects via lockfile scanning (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, plus a `package.json` fallback for exact pins).
+- **Lockfile scanning** — npm, Yarn, pnpm, and Bun projects via `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, or `bun.lock`, with a `package.json` fallback for exact pins.
 - **Clear findings** — severity, CVSS, CVE/GHSA identifiers, direct vs transitive classification, dependency paths, EPSS scores, and per-finding fix guidance.
+- **One-click remediation** — safe fixes (validated direct upgrades and in-range transitive refreshes) apply automatically; breaking parent upgrades require explicit review.
+- **Transitive dependency overrides** — when the dependency tree won't cooperate, Pacmon adds version-scoped overrides (npm `overrides`, yarn `resolutions`, pnpm `pnpm.overrides`) that redirect *only* the exact vulnerable version to a fixed one, leaving every other version untouched.
+- **Proof, not promises** — after a fix, Pacmon runs the package manager install, executes your configured test command, and checks the installed tree with the package manager's `npm ls`-equivalent to confirm the vulnerable version is gone and the target version is installed.
 - **Bulk operations** — scan every registered project in one click, then apply all safe fixes across them with live progress and per-project results.
-
-### Remediate
-
-- **One-click fixes** — safe fixes (validated direct upgrades and in-range transitive refreshes) apply automatically; breaking parent upgrades require explicit review.
-- **Transitive dependency overrides** — when the dependency tree won't cooperate, add version-scoped overrides (npm `overrides`, yarn `resolutions`, pnpm `pnpm.overrides`) that redirect *only* the exact vulnerable version to a fixed one, leaving every other version untouched:
-  ```json
-  {
-    "overrides": {
-      "lodash@4.17.20": "4.17.21",
-      "minimist@1.2.5": "1.2.8"
-    }
-  }
-  ```
-- **Prove the fix** — after overrides are applied, Pacmon runs the package manager install, executes your configured test command (default `npm test`), and checks the installed tree with the package manager's `npm ls`-equivalent to confirm the vulnerable version is gone and the target version is installed.
-
-### Trust
-
-- **Safety first** — change previews before anything runs, local backups with rollback, lifecycle scripts ignored by default, and every fix verified by a fresh scan. A finding is never reported resolved without a verifying scan, and rollback never overwrites files changed after the fix.
-- **Commit when you're ready** — create a branch and commit only the touched files (`package.json` + lockfiles), with configurable naming templates (tokens like `{project}`, `{date}`, `{packages}`). Commits are gated on a passing test suite when overrides were applied.
+- **Safe by default** — change previews, hashed backups with rollback, lifecycle scripts ignored unless you opt in, and every fix verified by a fresh scan before anything is called resolved.
+- **Commit when you're ready** — create a branch and commit only the touched files, with configurable naming templates; commits are gated on a passing test suite when overrides were applied.
 - **Local scan history** — every scan is retained; compare any two scans to see what was resolved, what remains, and what changed.
 - **Extensible by design** — a common ecosystem provider contract (`detect` / `scan` / `getRemediations` / `remediate` / `verify`) so Python, IaC, and container ecosystems can be added without touching the core.
 
-## Getting started
+## Screenshots
 
-Requires Node.js 22.13+ (Electron 45 bundles Node 24).
+### Security posture
 
-```bash
-npm install
-npm run dev          # launch with hot reload
-npm test             # unit + integration tests (hermetic: local mock OSV server)
-npm run typecheck
-```
+The overview aggregates every project's latest scan: outstanding findings by
+severity, affected projects, and one-click bulk scan and fix operations.
 
-### Building
+![Pacmon overview with demo projects and bulk operations](docs/screenshots/dashboard.webp)
 
-```bash
-npm run build:linux   # AppImage, deb (Ubuntu), rpm (Fedora)
-npm run build:mac     # dmg, zip (macOS)
-npm run build:win     # NSIS installer (Windows)
-```
+### Findings
 
-Cross-platform builds run in CI; macOS builds must run on macOS.
+Each finding shows severity, CVSS, CVE/GHSA identifiers, direct vs transitive
+classification, dependency paths, EPSS, and fix guidance — with the advisory
+detail open beside the list.
 
-## How it works
+![Project findings with the advisory detail panel open](docs/screenshots/project-findings.webp)
 
-```
-scan ──► findings ──► fix plan ──► preview ──► backup ──► apply ──► fresh scan ──► verified diff
-                                    └─ transitive overrides: manifest ─► install ─► tests ─► npm ls check
-```
+### Remediation
 
-1. **Scan** — the cve-lite engine reads the lockfile and queries OSV for advisories affecting the resolved versions.
-2. **Plan** — each finding gets a remediation: a validated direct upgrade, an in-range transitive refresh, a breaking parent upgrade (explicit review), or an override.
-3. **Apply** — package-manager-native commands (argv-only, never a shell) with lifecycle scripts suppressed unless you opt in.
-4. **Verify** — a fresh scan diffs against the previous state; tests and installed-version checks prove the app still works.
+Safe fixes apply in one click. When transitive packages can't be moved safely,
+opting into overrides shows the exact version-scoped entries that will be
+written, installed, tested, and verified.
 
-## Security model
+![Remediation plan with safe fixes and the transitive override preview](docs/screenshots/remediation.webp)
 
-Pacmon treats your projects as hostile input:
+### Settings
 
-- Renderer is fully sandboxed (`contextIsolation`, no `nodeIntegration`, strict CSP).
-- All IPC payloads are zod-validated; filesystem operations are restricted to registered project paths with symlink-aware containment.
-- Package-manager execution runs through a fixed allowlist with argv-only command construction — a dependency name containing `&&` can never become a second command.
-- Remediation files are backed up with hashed manifests before any change; rollback refuses to clobber files you edited afterwards.
+Local preferences: scan options, the test command run after fixes, and the
+branch/commit naming templates with live previews.
+
+![Settings showing scan, remediation, and git integration options](docs/screenshots/settings.webp)
+
+### Scan history
+
+Every scan is kept locally. Select any two to compare what was resolved, what
+remains, and what changed.
+
+![Scan history grouped by project](docs/screenshots/history.webp)
+
+_Screenshots use demo data._
+
+## Stack
+
+- **App shell**: Electron 45, React 19, TypeScript
+- **UI**: Tailwind CSS v4, framer-motion, zustand
+- **Scanning**: [cve-lite-cli](https://github.com/OWASP/cve-lite-cli) (OWASP) over the OSV advisory database
+- **Validation**: Zod v4
+- **Tests**: Vitest — unit plus integration against a local HTTPS mock of the OSV and npm-registry APIs
 
 ## Architecture
 
+Pacmon is split across four layers. `src/shared` holds the domain models and the
+zod-validated IPC contract used by every process. `src/core` is pure,
+platform-free logic: the ecosystem provider contract, the cve-lite adapter,
+normalization, remediation planning, override merging, installed-version checks,
+verification, backups, and git naming. `src/main` wires Electron — the window,
+the engine runner (spawns cve-lite on the app's own Node), the package-manager
+and test executors, the git service, and the history store — behind a narrow
+typed bridge in `src/preload`. The renderer is a React app that only ever talks
+to that bridge.
+
+The security model treats projects as hostile input: the renderer is fully
+sandboxed with a strict CSP, every IPC payload is validated, filesystem
+operations are contained to registered project paths (symlink-aware), and
+package-manager commands are built argv-only against a fixed allowlist — a
+dependency name containing `&&` can never become a second command. Remediation
+backs up touched files with hashed manifests before changing anything, and
+rollback refuses to clobber files edited after the fix.
+
+## Getting started
+
+### 1. Prerequisites
+
+Node.js 22.13+ (Electron 45 bundles Node 24, so no separate Node install is
+needed for the packaged app).
+
+### 2. Install
+
+```bash
+npm install
 ```
-src/shared     Domain models + IPC contract (zod-validated), shared by all processes
-src/core       Pure, platform-free logic: ecosystem provider contract, the
-               JavaScript provider (cve-lite adapter), normalization, remediation
-               planning, overrides, version checks, verification, backups, git naming
-src/main       Electron main: window, services (engine runner, command executor,
-               test runner, git service, history store), and the validated IPC boundary
-src/preload    The only bridge: a narrow typed API over ipcRenderer
-src/renderer   React UI (Tailwind v4, framer-motion, zustand)
+
+### 3. Run in development
+
+```bash
+npm run dev    # launch with hot reload
 ```
 
-## Testing
+### 4. Verify and build
 
-- **Unit** — ecosystem detection, vulnerability normalization, remediation planning, override merging, version-check parsing, command construction, git naming, backup/rollback safety, path containment, IPC payload validation, and jsdom render tests for the full app.
-- **Integration** — the real cve-lite-cli engine runs against npm / Yarn / pnpm fixture projects with a local HTTPS mock of the OSV + npm-registry APIs — no external network or registry needed. Includes the full remediation loop: backup → apply → verify → rollback, and the override → install → `npm ls` check pipeline.
+```bash
+npm test               # unit + integration tests (hermetic, no network needed)
+npm run typecheck
 
-## Design
+npm run build:linux    # AppImage, deb, rpm
+npm run build:mac      # dmg, zip
+npm run build:win      # NSIS installer
+```
 
-The UI is **monochrome print**: ink on cool paper, serif display headings (Newsreader), Space Grotesk body text, and JetBrains Mono for every technical label. The chrome is strictly grayscale — colour exists only in the data, where severity dots, status LEDs, and signal blocks carry the meaning. Square corners, 1px rules, no decorative texture.
+Cross-platform builds run in CI; macOS builds must run on macOS. Download
+packaged builds from [GitHub Releases](https://github.com/aartan/pacmon/releases).
+
+## Scripts
+
+| Command              | Purpose                                             |
+| -------------------- | --------------------------------------------------- |
+| `npm run dev`        | Dev server with hot reload (Electron + Vite)        |
+| `npm run build`      | Production build                                    |
+| `npm run build:linux`| Package AppImage, deb, rpm                          |
+| `npm run build:mac`  | Package dmg, zip                                    |
+| `npm run build:win`  | Package NSIS installer                              |
+| `npm run icons`      | Render `build/icon.svg` to `build/icon.png`         |
+| `npm run screenshots`| Capture README screenshots with demo data           |
+| `npm test`           | Unit + integration tests (Vitest)                   |
+| `npm run test:watch` | Vitest in watch mode                                |
+| `npm run typecheck`  | TypeScript check for main, preload, and renderer    |
 
 ## License
 
